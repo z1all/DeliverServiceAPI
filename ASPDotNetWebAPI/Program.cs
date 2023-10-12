@@ -1,10 +1,22 @@
+using ASPDotNetWebAPI.Models;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Подключение базы данных
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+
 var app = builder.Build();
+
+// Создание авто миграций
+using var serviceScope = app.Services.CreateScope();
+var dbContext = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
+dbContext?.Database.Migrate();
 
 if (app.Environment.IsDevelopment())
 {
