@@ -7,6 +7,8 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<Dish> Dishes {  get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<DishBasket> DishBaskets { get; set; }
+        public DbSet<DishInCart> DishInCarts { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) 
         {
@@ -14,9 +16,7 @@ namespace ASPDotNetWebAPI.Models
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            //modelBuilder.Entity<Rating>().HasNoKey();
-           
+        {        
             modelBuilder.Entity<Rating>()
                 .HasOne(rating => rating.Dish)
                 .WithMany(dish => dish.Ratings)
@@ -30,9 +30,31 @@ namespace ASPDotNetWebAPI.Models
             modelBuilder.Entity<Rating>()
                 .HasKey(rating => new { rating.DishId, rating.UserId });
 
-            //modelBuilder.Entity<Rating>().HasOne(x => x.User).WithMany(x => x.Ratings).IsRequired();
+            modelBuilder.Entity<DishBasket>()
+                .HasOne(dishBasket => dishBasket.Dish)
+                .WithMany(dish => dish.DishBaskets)
+                .HasForeignKey(dishBasket => dishBasket.DishId)
+                .IsRequired();
+            modelBuilder.Entity<DishBasket>()
+                .HasOne(dishBasket => dishBasket.User)
+                .WithMany(user => user.DishBaskets)
+                .HasForeignKey(dishBasket => dishBasket.UserId)
+                .IsRequired();
+            modelBuilder.Entity<DishBasket>()
+                .HasOne(dishBasket => dishBasket.DishInCart)
+                .WithMany(dishInCart => dishInCart.DishBaskets)
+                .HasForeignKey(dishBasket => dishBasket.DishInCartId)
+                .IsRequired();
+            modelBuilder.Entity<DishBasket>()
+                .HasKey(dishBasket => new { dishBasket.DishId, dishBasket.UserId, dishBasket.DishInCartId });
 
-            //modelBuilder.Entity<Rating>().HasKey(x => new { x.User, x.Dish });
+            modelBuilder.Entity<DishInCart>()
+                .HasOne(dishBasket => dishBasket.User)
+                .WithMany(user => user.DishInCarts)
+                .HasForeignKey(dishBasket => dishBasket.UserId)
+                .IsRequired();
+            modelBuilder.Entity<DishInCart>()
+                .HasKey(dishInCart => dishInCart.Id);
         }
     }
 }
