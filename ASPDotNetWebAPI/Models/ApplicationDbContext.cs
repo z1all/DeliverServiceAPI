@@ -10,6 +10,9 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<DishBasket> DishBaskets { get; set; }
         public DbSet<DishInCart> DishInCarts { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<House> Houses { get; set; }
+        public DbSet<Hierarchy> Hierarchys { get; set; }
+        public DbSet<AddressElement> AddressElements { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {

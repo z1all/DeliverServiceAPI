@@ -18,6 +18,8 @@ using var serviceScope = app.Services.CreateScope();
 var dbContext = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
 dbContext?.Database.Migrate();
 
+//throw new Exception();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -31,3 +33,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+
