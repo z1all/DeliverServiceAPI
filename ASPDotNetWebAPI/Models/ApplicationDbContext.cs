@@ -4,19 +4,20 @@ namespace ASPDotNetWebAPI.Models
 {
     public class ApplicationDbContext : DbContext
     {
-        public DbSet<Dish> Dishes {  get; set; }
+        public DbSet<Dish> Dishes { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<DishBasket> DishBaskets { get; set; }
         public DbSet<DishInCart> DishInCarts { get; set; }
+        public DbSet<Order> Orders { get; set; }
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) 
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
             //Database.EnsureCreated();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {        
+        {
             modelBuilder.Entity<Rating>()
                 .HasOne(rating => rating.Dish)
                 .WithMany(dish => dish.Ratings)
@@ -54,7 +55,18 @@ namespace ASPDotNetWebAPI.Models
                 .HasForeignKey(dishBasket => dishBasket.UserId)
                 .IsRequired();
             modelBuilder.Entity<DishInCart>()
+                .HasOne(dishInCart => dishInCart.Order)
+                .WithMany()
+                .HasForeignKey(dishInCart => dishInCart.OrderId)
+                .IsRequired(false);
+            modelBuilder.Entity<DishInCart>()
                 .HasKey(dishInCart => dishInCart.Id);
+
+            modelBuilder.Entity<Order>()
+                .HasOne(order => order.User)
+                .WithMany(user => user.Orders)
+                .HasForeignKey(order => order.UserId)
+                .IsRequired();
         }
     }
 }
