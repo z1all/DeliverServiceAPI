@@ -12,6 +12,7 @@ namespace ASPDotNetWebAPI.Models
         public Guid Id { get; set; }
         [MinLength(1)]
         public string FullName { get; set; }
+        public string HashPassword { get; set; }
         public DateTime BirthDate { get; set; }
         public Gender Gender { get; set; }
         public string PhoneNumber { get; set; }
