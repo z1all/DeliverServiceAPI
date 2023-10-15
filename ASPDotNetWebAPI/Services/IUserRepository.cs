@@ -5,6 +5,6 @@ namespace ASPDotNetWebAPI.Services
 {
     public interface IUserRepository
     {
-        Task Register(RegistrationRequestDTO model);
+        Task<RegistrationResponseDTO> Register(RegistrationRequestDTO model);
     }
 }
