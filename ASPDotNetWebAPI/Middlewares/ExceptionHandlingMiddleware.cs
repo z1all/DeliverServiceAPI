@@ -23,8 +23,8 @@ namespace ASPDotNetWebAPI.Middlewares
             }
             catch (Exception ex)
             {
-                await HandlExceptionAsync(httpContext, ex, HttpStatusCode.InternalServerError, "OH no! NullReferenceException!");
-                //throw;
+                await HandlExceptionAsync(httpContext, ex, HttpStatusCode.InternalServerError, "Error");
+                throw;
             }
         }
 
@@ -43,9 +43,7 @@ namespace ASPDotNetWebAPI.Middlewares
                 Status = (int)httpStatusCode
             };
 
-            string result = JsonSerializer.Serialize(errorDTO);
-
-            await response.WriteAsJsonAsync(result);
+            await response.WriteAsJsonAsync(errorDTO);
         }
     }
 }
