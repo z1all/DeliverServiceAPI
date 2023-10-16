@@ -15,21 +15,22 @@ namespace ASPDotNetWebAPI.Middlewares
             _logger = logger;
         }
 
-        public async Task TaskAsync(HttpContext httpContext)
+        public async Task InvokeAsync(HttpContext httpContext)
         {
             try
             {
                 await _next(httpContext);
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                await HandlExceptionAsync(httpContext, ex, HttpStatusCode.InternalServerError, "OH no! NullReferenceException!");
+                //throw;
             }
         }
 
-        private async Task HandlExceptionAsync(HttpContext httpContext, string exceptionMessage, HttpStatusCode httpStatusCode, string message)
+        private async Task HandlExceptionAsync(HttpContext httpContext, Exception ex, HttpStatusCode httpStatusCode, string message)
         {
-            _logger.LogError(exceptionMessage);
+            _logger.LogError(ex, ex.Message);
 
             HttpResponse response = httpContext.Response;
 
@@ -44,7 +45,7 @@ namespace ASPDotNetWebAPI.Middlewares
 
             string result = JsonSerializer.Serialize(errorDTO);
 
-            await response.WriteAsync(result);
+            await response.WriteAsJsonAsync(result);
         }
     }
 }
