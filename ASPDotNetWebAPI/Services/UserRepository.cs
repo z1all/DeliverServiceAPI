@@ -19,16 +19,11 @@ namespace ASPDotNetWebAPI.Services
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
-        public Task<TokenResponseDTO> Login(LoginRequestDTO model)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<TokenResponseDTO> Register(RegistrationRequestDTO model)
+        public async Task<TokenResponseDTO> Login(LoginRequestDTO model)
         {
             // Перенести в контроллер 
-            var isUnique = await EmailIsUnique(model.Email);
-            if (isUnique)
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
+            if (user == null)
             {
                 return new TokenResponseDTO()
                 {
@@ -36,10 +31,36 @@ namespace ASPDotNetWebAPI.Services
                 };
             }
 
+            if(BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
+            {
+                return new TokenResponseDTO()
+                {
+                    Token = null
+                };
+            }
+
+            return new TokenResponseDTO()
+            {
+                Token = GeneratJWTToken(user)
+            };
+        }
+
+        public async Task<TokenResponseDTO> Register(RegistrationRequestDTO model)
+        {
+            // Перенести в контроллер 
+            var isUnique = !(await EmailIsUsed(model.Email));
+            if (isUnique)
+            {
+                return new TokenResponseDTO()
+                {
+                    Token = null
+                };
+            }   
+
             var user = new User()
             {
                 FullName = model.FullName,
-                HashPassword = model.Password,
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(12)),
                 BirthDate = model.BirthDate,
                 Gender = model.Gender,
                 PhoneNumber = model.PhoneNumber,
@@ -56,11 +77,11 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        private async Task<bool> EmailIsUnique(string email)
+        private async Task<bool> EmailIsUsed(string email)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
 
-            return user == null;
+            return user != null;
         }
 
         private string GeneratJWTToken(User user)

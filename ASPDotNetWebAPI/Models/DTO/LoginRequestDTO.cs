@@ -5,8 +5,8 @@ namespace ASPDotNetWebAPI.Models.DTO
     public class LoginRequestDTO
     {
         [MinLength(1)]
-        public string email {  get; set; }
+        public string Email {  get; set; }
         [MinLength(1)]
-        public string password { get; set; }
+        public string Password { get; set; }
     }
 }
