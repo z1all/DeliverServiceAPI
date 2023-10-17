@@ -5,8 +5,20 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 {
     public class CustomPasswordAttribute : ValidationAttribute
     {
+        private readonly bool nullable;
+
+        public CustomPasswordAttribute(bool nullable)
+        {
+            this.nullable = nullable;
+        }
+
         public override bool IsValid(object? value)
         {
+            if(nullable &&  value == null) 
+            {
+                return true;
+            }
+
             if (value is string password)
             {
                 if (!Regex.IsMatch(password, @"[A-Z]"))
