@@ -1,6 +1,6 @@
 ﻿namespace ASPDotNetWebAPI.Models.DTO
 {
-    public class RegistrationResponseDTO
+    public class TokenResponseDTO
     {
         public string? Token { get; set; }
     }

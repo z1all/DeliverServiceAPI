@@ -1,6 +1,5 @@
 ﻿using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,13 +19,18 @@ namespace ASPDotNetWebAPI.Services
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
-        public async Task<RegistrationResponseDTO> Register(RegistrationRequestDTO model)
+        public Task<TokenResponseDTO> Login(LoginRequestDTO model)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<TokenResponseDTO> Register(RegistrationRequestDTO model)
         {
             // Перенести в контроллер 
             var isUnique = await EmailIsUnique(model.Email);
             if (isUnique)
             {
-                return new RegistrationResponseDTO()
+                return new TokenResponseDTO()
                 {
                     Token = null
                 };
@@ -46,7 +50,7 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
 
-            return new RegistrationResponseDTO()
+            return new TokenResponseDTO()
             {
                 Token = GeneratJWTToken(user)
             };

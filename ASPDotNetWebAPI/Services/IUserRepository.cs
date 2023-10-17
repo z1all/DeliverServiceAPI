@@ -1,10 +1,10 @@
 ﻿using ASPDotNetWebAPI.Models.DTO;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ASPDotNetWebAPI.Services
 {
     public interface IUserRepository
     {
-        Task<RegistrationResponseDTO> Register(RegistrationRequestDTO model);
+        Task<TokenResponseDTO> Register(RegistrationRequestDTO model);
+        Task<TokenResponseDTO> Login(LoginRequestDTO model);
     }
 }
