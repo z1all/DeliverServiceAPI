@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace ASPDotNetWebAPI.Models.DTO
@@ -8,7 +9,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         [MinLength(1)]
         public string FullName { get; set; }
         [MinLength(6)]
-        [CustomPassword(nullable: false)]
+        [CustomPassword(Nullable = false)]
         public string Password { get; set; }
         [MinLength(1)]
         [EmailAddress]
@@ -16,7 +17,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         public Guid? AddressId { get; set; }
         public DateTime? BirthDate { get; set; }
         public Gender Gender { get; set; }
-        [CustomPhone(nullable: true)]
+        [CustomPhone(Nullable = false)]
         public string? PhoneNumber { get; set; }
     }
 }

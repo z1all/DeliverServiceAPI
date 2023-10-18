@@ -5,16 +5,11 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 {
     public class CustomPasswordAttribute : ValidationAttribute
     {
-        private readonly bool nullable;
-
-        public CustomPasswordAttribute(bool nullable)
-        {
-            this.nullable = nullable;
-        }
+        public bool Nullable { get; set; } = false;
 
         public override bool IsValid(object? value)
         {
-            if(nullable &&  value == null) 
+            if(Nullable &&  value == null) 
             {
                 return true;
             }

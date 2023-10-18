@@ -11,7 +11,7 @@ namespace ASPDotNetWebAPI.Services
     public class UserRepository : IUserRepository
     {
         private readonly ApplicationDbContext _dbContext;
-        private string secretKey;
+        private string? secretKey;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
         { 
@@ -94,7 +94,8 @@ namespace ASPDotNetWebAPI.Services
                 return false;
             }
 
-            await _dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
+            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.Value });
+            await _dbContext.SaveChangesAsync();
 
             return true;
         }
@@ -115,7 +116,6 @@ namespace ASPDotNetWebAPI.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, user.FullName),
                     new Claim(ClaimTypes.Email, user.Email),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
