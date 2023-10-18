@@ -1,4 +1,5 @@
 using ASPDotNetWebAPI.Models;
+using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -57,6 +58,7 @@ builder.Services.AddAuthentication(authOptions =>
             ValidIssuer = "HITs",
             ValidateAudience = false
         };
+        
     });
 
 // Connecting the database

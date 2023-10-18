@@ -6,5 +6,6 @@ namespace ASPDotNetWebAPI.Services
     {
         Task<TokenResponseDTO> Register(RegistrationRequestDTO model);
         Task<TokenResponseDTO> Login(LoginRequestDTO model);
+        Task<bool> Logout(string token);
     }
 }

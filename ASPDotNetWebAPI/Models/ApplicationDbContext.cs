@@ -13,6 +13,7 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<House> Houses { get; set; }
         public DbSet<Hierarchy> Hierarchys { get; set; }
         public DbSet<AddressElement> AddressElements { get; set; }
+        public DbSet<DeletedTokens> DeletedTokens { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
