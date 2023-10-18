@@ -19,16 +19,13 @@ namespace ASPDotNetWebAPI.Services
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
-        public async Task<TokenResponseDTO> Register(RegistrationRequestDTO model)
+        public async Task<TokenResponseDTO?> Register(RegistrationRequestDTO model)
         {
             // Перенести в контроллер 
             var isUnique = !(await EmailIsUsed(model.Email));
             if (isUnique)
             {
-                return new TokenResponseDTO()
-                {
-                    Token = null
-                };
+                return null;
             }   
 
             var user = new User()
@@ -51,24 +48,18 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<TokenResponseDTO> Login(LoginRequestDTO model)
+        public async Task<TokenResponseDTO?> Login(LoginRequestDTO model)
         {
             // Перенести в контроллер 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
             if (user == null)
             {
-                return new TokenResponseDTO()
-                {
-                    Token = null
-                };
+                return null;
             }
 
             if (BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
             {
-                return new TokenResponseDTO()
-                {
-                    Token = null
-                };
+                return null;
             }
 
             return new TokenResponseDTO()
@@ -99,6 +90,46 @@ namespace ASPDotNetWebAPI.Services
 
             return true;
         }
+
+        public async Task<UserResponseDTO?> GetProfile(Guid userGuid)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+
+            if(user == null)
+            {
+                return null;
+            }
+
+            return new UserResponseDTO()
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                BirthDate = user.BirthDate,
+                Gender = user.Gender,
+                AddressId = user.AddressId,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber
+            };
+        }
+
+        public async Task<bool> EditeProfile(Guid userGuid, UserEditRequestDTO model)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.FullName = model.FullName;
+            user.BirthDate = model.BirthDate;
+            user.Gender = model.Gender;
+            user.AddressId = model.AddressId;
+            user.PhoneNumber = model.PhoneNumber;
+
+            return true;
+        }
+        
 
         private async Task<bool> EmailIsUsed(string email)
         {
