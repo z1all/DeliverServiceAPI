@@ -43,5 +43,24 @@ namespace ASPDotNetWebAPI.Controllers
 
             return Ok(token);
         }
+
+        [HttpPost("login")]
+        [ProducesResponseType(typeof(TokenResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponseDTO), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDTO), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginRequestDTO model)
+        {
+            var token = await _userRepository.LoginAsync(model);
+            if(token == null)
+            {
+                return BadRequest(new ErrorResponseDTO()
+                {
+                    Status = 400,
+                    Message = $"Login failed."
+                });
+            }
+
+            return Ok(token);
+        }
     }
 }

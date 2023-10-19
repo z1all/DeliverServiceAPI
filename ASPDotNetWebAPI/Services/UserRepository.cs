@@ -49,7 +49,7 @@ namespace ASPDotNetWebAPI.Services
                 return null;
             }
 
-            if (BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
+            if (!BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
             {
                 return null;
             }
