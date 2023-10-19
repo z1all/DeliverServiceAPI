@@ -9,40 +9,21 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 {
     public class CustomAuthorizeAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
     {
-        private readonly ApplicationDbContext _dbContext;
-
-        public CustomAuthorizeAttribute(ApplicationDbContext context) 
-        {
-            _dbContext = context;
-        }
-
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-
             var token = context.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            if (!tokenHandler.CanReadToken(token))
-            {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
-            }
-
+            var tokenHandler = new JwtSecurityTokenHandler();
             var parsedToken = tokenHandler.ReadJwtToken(token);
+
             var JTI = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "JTI");
 
-            if (JTI == null)
-            {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
-            }
-
-            var deletedToken = await _dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
+            var dbContext = context.HttpContext.RequestServices.GetService<ApplicationDbContext>();
+            var deletedToken = await dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
             
             if(deletedToken != null)
             {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
+                context.Result = new ForbidResult();
             }
         }
     }

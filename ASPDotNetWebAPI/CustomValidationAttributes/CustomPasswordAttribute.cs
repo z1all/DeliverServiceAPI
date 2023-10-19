@@ -18,13 +18,13 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
             {
                 if (!Regex.IsMatch(password, @"[A-Z]"))
                 {
-                    ErrorMessage = "Пароль должен содержать хотя бы одну заглавную букву.";
+                    ErrorMessage = "The password must contain at least one capital letter.";
                     return false;
                 }
 
                 if (!Regex.IsMatch(password, @"[0-9]"))
                 {
-                    ErrorMessage = "Пароль должен содержать хотя бы одну цифру.";
+                    ErrorMessage = "The password must contain at least one digit.";
                     return false;
                 }
 
