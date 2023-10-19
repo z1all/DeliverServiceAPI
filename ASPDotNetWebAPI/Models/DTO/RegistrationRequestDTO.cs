@@ -1,6 +1,7 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ASPDotNetWebAPI.Models.DTO
 {

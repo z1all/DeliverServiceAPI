@@ -14,20 +14,13 @@ namespace ASPDotNetWebAPI.Services
         private string? secretKey;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
-        { 
+        {
             _dbContext = dbContext;
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
-        public async Task<TokenResponseDTO?> Register(RegistrationRequestDTO model)
+        public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
         {
-            // Перенести в контроллер 
-            var isUnique = !(await EmailIsUsed(model.Email));
-            if (isUnique)
-            {
-                return null;
-            }   
-
             var user = new User()
             {
                 FullName = model.FullName,
@@ -48,9 +41,8 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<TokenResponseDTO?> Login(LoginRequestDTO model)
+        public async Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO model)
         {
-            // Перенести в контроллер 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
             if (user == null)
             {
@@ -68,11 +60,11 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> Logout(string token)
+        public async Task<bool> LogoutAsync(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
-            if(!tokenHandler.CanReadToken(token))
+            if (!tokenHandler.CanReadToken(token))
             {
                 return false;
             }
@@ -91,11 +83,11 @@ namespace ASPDotNetWebAPI.Services
             return true;
         }
 
-        public async Task<UserResponseDTO?> GetProfile(Guid userGuid)
+        public async Task<UserResponseDTO?> GetProfileAsync(Guid userGuid)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
-            if(user == null)
+            if (user == null)
             {
                 return null;
             }
@@ -112,7 +104,7 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> EditeProfile(Guid userGuid, UserEditRequestDTO model)
+        public async Task<bool> EditeProfileAsync(Guid userGuid, UserEditRequestDTO model)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
@@ -129,16 +121,15 @@ namespace ASPDotNetWebAPI.Services
 
             return true;
         }
-        
 
-        private async Task<bool> EmailIsUsed(string email)
+        public async Task<bool> EmailIsUsedAsync(string email)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
 
             return user != null;
         }
 
-        public string GeneratJWTToken(User user)
+        private string GeneratJWTToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secretKey);

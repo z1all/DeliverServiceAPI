@@ -17,7 +17,7 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 
             if(value is string phone)
             {
-                if(Regex.IsMatch(phone, @"^(\\+7|8)[0-9]{10}$"))
+                if(Regex.IsMatch(phone, @"^(\+7|8)[0-9]{10}$"))
                 {
                     return true;
                 }
