@@ -34,7 +34,7 @@ namespace ASPDotNetWebAPI.Controllers
 
             var token = await _userRepository.RegisterAsync(model);
 
-            return Ok(token);
+            return token;
         }
 
         [HttpPost("login")]
@@ -59,8 +59,8 @@ namespace ASPDotNetWebAPI.Controllers
         [HttpPost("logout")]
         [CustomAuthorize]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        // [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ResponseDTO>> Logout()
         {
@@ -78,8 +78,8 @@ namespace ASPDotNetWebAPI.Controllers
         [HttpGet("profile")]
         [CustomAuthorize]
         [ProducesResponseType(typeof(UserResponseDTO), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        // [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<UserResponseDTO>> GetUserInfo()
@@ -102,9 +102,9 @@ namespace ASPDotNetWebAPI.Controllers
         [HttpPut("profile")]
         [CustomAuthorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        // [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> EditUserInfo([FromBody] UserEditRequestDTO model)
@@ -122,6 +122,6 @@ namespace ASPDotNetWebAPI.Controllers
             }
 
             return Ok();
-        }   
+        }
     }
 }

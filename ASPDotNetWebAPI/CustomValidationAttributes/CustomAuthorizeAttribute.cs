@@ -24,7 +24,7 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
         {
             var JTI = token.Claims.FirstOrDefault(claim => claim.Type == "JTI");
             if (JTI == null)
-            {   
+            {
                 Forbid(context, "JWTToken", "Error: a token without a unique identifier JTI.");
                 return;
             }
