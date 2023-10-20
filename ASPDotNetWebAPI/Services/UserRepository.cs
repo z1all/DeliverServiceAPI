@@ -114,6 +114,7 @@ namespace ASPDotNetWebAPI.Services
             }
 
             user.FullName = model.FullName;
+            user.Email = model.Email;
             user.BirthDate = model.BirthDate;
             user.Gender = model.Gender;
             user.AddressId = model.AddressId;

@@ -125,5 +125,46 @@ namespace ASPDotNetWebAPI.Controllers
 
             return userInfo;
         }
+
+        [HttpPut("profile")]
+        [CustomAuthorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> SetUserInfo(UserEditRequestDTO model)
+        {
+            var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+            var userGuidStr = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "UserId");
+
+            if (userGuidStr == null)
+            {
+                HttpContext.Response.Headers.Add("JWTToken", "Error: a token without a UserId.");
+                return Forbid();
+            }
+
+            if (!Guid.TryParse(userGuidStr.Value, out Guid userGuid))
+            {
+                HttpContext.Response.Headers.Add("JWTToken", "Error: a token contain an uncorrected userId");
+                return Forbid();
+            }
+
+            var hasBeenUpdated = await _userRepository.EditeProfileAsync(userGuid, model);
+            if (!hasBeenUpdated)
+            {
+                return NotFound(new ResponseDTO()
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = "User not found. Either it doesn't exist, or the token is invalid."
+                });
+            }
+
+            return Ok();
+        }
     }
 }
