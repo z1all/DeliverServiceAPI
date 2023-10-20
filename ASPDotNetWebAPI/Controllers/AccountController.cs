@@ -2,7 +2,6 @@
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace ASPDotNetWebAPI.Controllers
 {
@@ -24,7 +23,6 @@ namespace ASPDotNetWebAPI.Controllers
         public async Task<ActionResult<TokenResponseDTO>> Register([FromBody] RegistrationRequestDTO model)
         {
             var isNotUnique = await _userRepository.EmailIsUsedAsync(model.Email);
-
             if (isNotUnique)
             {
                 return BadRequest(new ResponseDTO()
@@ -46,7 +44,6 @@ namespace ASPDotNetWebAPI.Controllers
         public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginRequestDTO model)
         {
             var token = await _userRepository.LoginAsync(model);
-
             if (token == null)
             {
                 return BadRequest(new ResponseDTO()
@@ -69,15 +66,7 @@ namespace ASPDotNetWebAPI.Controllers
         {
             var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            var IsLoggedOut = await _userRepository.LogoutAsync(token);
-            if (!IsLoggedOut)
-            {
-                return BadRequest(new ResponseDTO()
-                {
-                    Status = 400,
-                    Message = "Invalid JWT token."
-                });
-            }
+            await _userRepository.LogoutAsync(token);
 
             return new ResponseDTO()
             {
@@ -97,23 +86,7 @@ namespace ASPDotNetWebAPI.Controllers
         {
             var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var userGuidStr = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "UserId");
-
-            if (userGuidStr == null)
-            {
-                HttpContext.Response.Headers.Add("JWTToken", "Error: a token without a UserId.");
-                return Forbid();
-            }
-
-            if (!Guid.TryParse(userGuidStr.Value, out Guid userGuid))
-            {
-                HttpContext.Response.Headers.Add("JWTToken", "Error: a token contain an uncorrected userId");
-                return Forbid();
-            }
-
-            var userInfo = await _userRepository.GetProfileAsync(userGuid);
+            var userInfo = await _userRepository.GetProfileAsync(token);
             if (userInfo == null)
             {
                 return NotFound(new ResponseDTO()
@@ -134,27 +107,11 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> SetUserInfo(UserEditRequestDTO model)
+        public async Task<ActionResult> EditUserInfo([FromBody] UserEditRequestDTO model)
         {
             var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var userGuidStr = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "UserId");
-
-            if (userGuidStr == null)
-            {
-                HttpContext.Response.Headers.Add("JWTToken", "Error: a token without a UserId.");
-                return Forbid();
-            }
-
-            if (!Guid.TryParse(userGuidStr.Value, out Guid userGuid))
-            {
-                HttpContext.Response.Headers.Add("JWTToken", "Error: a token contain an uncorrected userId");
-                return Forbid();
-            }
-
-            var hasBeenUpdated = await _userRepository.EditeProfileAsync(userGuid, model);
+            var hasBeenUpdated = await _userRepository.EditProfileAsync(token, model);
             if (!hasBeenUpdated)
             {
                 return NotFound(new ResponseDTO()
@@ -165,6 +122,6 @@ namespace ASPDotNetWebAPI.Controllers
             }
 
             return Ok();
-        }
+        }   
     }
 }

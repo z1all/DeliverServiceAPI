@@ -6,9 +6,9 @@ namespace ASPDotNetWebAPI.Services
     {
         Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model);
         Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO model);
-        Task<bool> LogoutAsync(string token);
-        Task<UserResponseDTO?> GetProfileAsync(Guid userGuid);
-        Task<bool> EditeProfileAsync(Guid userGuid, UserEditRequestDTO model);
+        Task LogoutAsync(string token);
+        Task<UserResponseDTO?> GetProfileAsync(string token);
+        Task<bool> EditProfileAsync(string token, UserEditRequestDTO model);
         Task<bool> EmailIsUsedAsync(string email);
     }
 }

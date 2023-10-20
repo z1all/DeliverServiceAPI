@@ -60,31 +60,18 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> LogoutAsync(string token)
+        public async Task LogoutAsync(string token)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var JTI = GetValueFromToken(token, "UserId");
 
-            if (!tokenHandler.CanReadToken(token))
-            {
-                return false;
-            }
-
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var JTI = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "JTI");
-
-            if (JTI == null)
-            {
-                return false;
-            }
-
-            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.Value });
+            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI });
             await _dbContext.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<UserResponseDTO?> GetProfileAsync(Guid userGuid)
+        public async Task<UserResponseDTO?> GetProfileAsync(string token)
         {
+            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
+
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
             if (user == null)
@@ -104,10 +91,11 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> EditeProfileAsync(Guid userGuid, UserEditRequestDTO model)
+        public async Task<bool> EditProfileAsync(string token, UserEditRequestDTO model)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
 
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
             if (user == null)
             {
                 return false;
@@ -139,7 +127,6 @@ namespace ASPDotNetWebAPI.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Email, user.Email),
                     new Claim("UserId", user.Id.ToString()),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
@@ -150,6 +137,15 @@ namespace ASPDotNetWebAPI.Services
 
             var token = tokenHandler.CreateToken(tokenDescription);
             return tokenHandler.WriteToken(token);
+        }
+
+        private string GetValueFromToken(string token, string type)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == type);
+
+            return userGuidStr.Value;
         }
     }
 }
