@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.Models;
+using ASPDotNetWebAPI.Models.DTO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -17,6 +18,13 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
             var parsedToken = tokenHandler.ReadJwtToken(token);
 
             var JTI = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "JTI");
+
+            if (JTI == null) 
+            {
+                context.Result = new ForbidResult();
+                context.HttpContext.Response.Headers.Add("JWTToken", "Error: a token without a unique identifier JTI.");
+                return;
+            }
 
             var dbContext = context.HttpContext.RequestServices.GetService<ApplicationDbContext>();
             var deletedToken = await dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);

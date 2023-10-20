@@ -139,6 +139,7 @@ namespace ASPDotNetWebAPI.Services
                 Subject = new ClaimsIdentity(new Claim[]
                 {
                     new Claim(ClaimTypes.Email, user.Email),
+                    new Claim("UserId", user.Id.ToString()),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
