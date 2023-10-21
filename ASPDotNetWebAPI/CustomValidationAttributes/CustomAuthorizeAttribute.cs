@@ -9,41 +9,56 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 {
     public class CustomAuthorizeAttribute : AuthorizeAttribute, IAsyncAuthorizationFilter
     {
-        private readonly ApplicationDbContext _dbContext;
-
-        public CustomAuthorizeAttribute(ApplicationDbContext context) 
-        {
-            _dbContext = context;
-        }
-
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-
             var token = context.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-            if (!tokenHandler.CanReadToken(token))
-            {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
-            }
-
+            var tokenHandler = new JwtSecurityTokenHandler();
             var parsedToken = tokenHandler.ReadJwtToken(token);
-            var JTI = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "JTI");
 
+            await CheckTokenJTI(context, parsedToken);
+            CheckTokenUserId(context, parsedToken);
+        }
+
+        private async Task CheckTokenJTI(AuthorizationFilterContext context, JwtSecurityToken token)
+        {
+            var JTI = token.Claims.FirstOrDefault(claim => claim.Type == "JTI");
             if (JTI == null)
             {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
+                Forbid(context, "JWTToken", "Error: a token without a unique identifier JTI.");
+                return;
             }
 
-            var deletedToken = await _dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
-            
-            if(deletedToken != null)
+            var dbContext = context.HttpContext.RequestServices.GetService<ApplicationDbContext>();
+            var deletedToken = await dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
+            if (deletedToken != null)
             {
-                // Добавить ErrorResponseDTO
-                context.Result = new UnauthorizedResult();
+                Forbid(context, "JWTToken", "Error: this token is no longer available");
+                return;
             }
+        }
+
+        private void CheckTokenUserId(AuthorizationFilterContext context, JwtSecurityToken token)
+        {
+            var userGuidStr = token.Claims.FirstOrDefault(claim => claim.Type == "UserId");
+
+            if (userGuidStr == null)
+            {
+                Forbid(context, "JWTToken", "Error: a token without a UserId.");
+                return;
+            }
+
+            if (!Guid.TryParse(userGuidStr.Value, out Guid userGuid))
+            {
+                Forbid(context, "JWTToken", "Error: a token contain an uncorrected userId");
+                return;
+            }
+        }
+
+        private void Forbid(AuthorizationFilterContext context, string key, string message)
+        {
+            context.HttpContext.Response.Headers.Add(key, message);
+            context.Result = new ForbidResult();
         }
     }
 }

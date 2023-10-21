@@ -15,15 +15,20 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
                 return true;
             }
 
-            if(value is string phone)
+            bool isCorrect = false;
+            if (value is string phone)
             {
-                if(Regex.IsMatch(phone, @"^(\\+7|8)[0-9]{10}$"))
+                if (!Regex.IsMatch(phone, @"^(\+7|8)[0-9]{10}$"))
                 {
-                    return true;
+                    ErrorMessage = "The phone number must start with '+7' or '8' and have 11 digits.";
+                }
+                else
+                {
+                    isCorrect = true;
                 }
             }
 
-            return false;
+            return isCorrect;
         }
     }
 }

@@ -9,29 +9,25 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
 
         public override bool IsValid(object? value)
         {
-            if(Nullable &&  value == null) 
+            if (Nullable && value == null)
             {
                 return true;
             }
 
+            bool isCorrect = false;
             if (value is string password)
             {
-                if (!Regex.IsMatch(password, @"[A-Z]"))
+                if (!Regex.IsMatch(password, @"[0-9]") || !Regex.IsMatch(password, @"[A-Z]"))
                 {
-                    ErrorMessage = "Пароль должен содержать хотя бы одну заглавную букву.";
-                    return false;
+                    ErrorMessage = "The password must contain at least one digit and one capital letter.";
                 }
-
-                if (!Regex.IsMatch(password, @"[0-9]"))
+                else
                 {
-                    ErrorMessage = "Пароль должен содержать хотя бы одну цифру.";
-                    return false;
+                    isCorrect = true;
                 }
-
-                return true;
             }
 
-            return false;
+            return isCorrect;
         }
     }
 }

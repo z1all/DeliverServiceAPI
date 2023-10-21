@@ -14,20 +14,13 @@ namespace ASPDotNetWebAPI.Services
         private string? secretKey;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
-        { 
+        {
             _dbContext = dbContext;
             secretKey = configuration.GetValue<string>("ApiSettings:Secret");
         }
 
-        public async Task<TokenResponseDTO?> Register(RegistrationRequestDTO model)
+        public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
         {
-            // Перенести в контроллер 
-            var isUnique = !(await EmailIsUsed(model.Email));
-            if (isUnique)
-            {
-                return null;
-            }   
-
             var user = new User()
             {
                 FullName = model.FullName,
@@ -48,16 +41,15 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<TokenResponseDTO?> Login(LoginRequestDTO model)
+        public async Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO model)
         {
-            // Перенести в контроллер 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
             if (user == null)
             {
                 return null;
             }
 
-            if (BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
+            if (!BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
             {
                 return null;
             }
@@ -68,34 +60,21 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> Logout(string token)
+        public async Task LogoutAsync(string token)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var JTI = GetValueFromToken(token, "UserId");
 
-            if(!tokenHandler.CanReadToken(token))
-            {
-                return false;
-            }
-
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var JTI = parsedToken.Claims.FirstOrDefault(claim => claim.Type == "JTI");
-
-            if (JTI == null)
-            {
-                return false;
-            }
-
-            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.Value });
+            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI });
             await _dbContext.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<UserResponseDTO?> GetProfile(Guid userGuid)
+        public async Task<UserResponseDTO?> GetProfileAsync(string token)
         {
+            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
+
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
-            if(user == null)
+            if (user == null)
             {
                 return null;
             }
@@ -112,16 +91,18 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> EditeProfile(Guid userGuid, UserEditRequestDTO model)
+        public async Task<bool> EditProfileAsync(string token, UserEditRequestDTO model)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
 
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
             if (user == null)
             {
                 return false;
             }
 
             user.FullName = model.FullName;
+            user.Email = model.Email;
             user.BirthDate = model.BirthDate;
             user.Gender = model.Gender;
             user.AddressId = model.AddressId;
@@ -129,16 +110,15 @@ namespace ASPDotNetWebAPI.Services
 
             return true;
         }
-        
 
-        private async Task<bool> EmailIsUsed(string email)
+        public async Task<bool> EmailIsUsedAsync(string email)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
 
             return user != null;
         }
 
-        public string GeneratJWTToken(User user)
+        private string GeneratJWTToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secretKey);
@@ -147,7 +127,7 @@ namespace ASPDotNetWebAPI.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim("UserId", user.Id.ToString()),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
@@ -157,6 +137,15 @@ namespace ASPDotNetWebAPI.Services
 
             var token = tokenHandler.CreateToken(tokenDescription);
             return tokenHandler.WriteToken(token);
+        }
+
+        private string GetValueFromToken(string token, string type)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == type);
+
+            return userGuidStr.Value;
         }
     }
 }
