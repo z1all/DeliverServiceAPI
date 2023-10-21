@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace ASPDotNetWebAPI.Models
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Gender
     {
         Male, Female
@@ -21,7 +23,6 @@ namespace ASPDotNetWebAPI.Models
         public Guid? AddressId { get; set; }
 
         public ICollection<Rating> Ratings { get; set; }
-        public ICollection<DishBasket> DishBaskets { get; set; }
         public ICollection<DishInCart> DishInCarts { get; set; }
         public ICollection<Order> Orders { get; set; }
     }

@@ -1,5 +1,8 @@
-﻿namespace ASPDotNetWebAPI.Models
+﻿using System.Text.Json.Serialization;
+
+namespace ASPDotNetWebAPI.Models
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Status
     {
         InProcess, Delivered

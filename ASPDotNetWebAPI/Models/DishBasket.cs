@@ -1,6 +1,6 @@
 ﻿namespace ASPDotNetWebAPI.Models
 {
-    public class DishBasket
+    public class DishBasket1
     {
         public Guid DishInCartId { get; set; }
         public Guid UserId { get; set; }

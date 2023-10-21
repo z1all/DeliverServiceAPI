@@ -16,6 +16,6 @@
         public DishCategory Category { get; set; }
 
         public ICollection<Rating> Ratings { get; set; }
-        public ICollection<DishBasket> DishBaskets { get; set; }
+        public ICollection<DishInCart> DishInCarts { get; set; }
     }
 }
