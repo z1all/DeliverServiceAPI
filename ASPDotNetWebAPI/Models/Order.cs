@@ -1,13 +1,7 @@
-﻿using System.Text.Json.Serialization;
+﻿using ASPDotNetWebAPI.Models.Enums;
 
 namespace ASPDotNetWebAPI.Models
-{
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum Status
-    {
-        InProcess, Delivered
-    }
-
+{  
     public class Order
     {
         public Guid Id { get; set; }
