@@ -1,6 +1,4 @@
 using ASPDotNetWebAPI.Models;
-using ASPDotNetWebAPI.Models.DTO;
-using ASPDotNetWebAPI.Models.Enums;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -80,30 +78,6 @@ var app = builder.Build();
 using var serviceScope = app.Services.CreateScope();
 var dbContext = serviceScope.ServiceProvider.GetService<ApplicationDbContext>();
 dbContext?.Database.Migrate();
-
-
-IEnumerable<SearchAddressDTO> query = from fromParentTo in dbContext.Hierarchys
-            join child in dbContext.Houses
-            on fromParentTo.Objectid equals child.Objectid
-            where fromParentTo.Parentobjid == 1289631 // && (child.Housenum != null? child.Housenum.Contains("То") : true)
-            select new SearchAddressDTO
-            {
-                ObjectId = child.Objectid,
-                ObjectGuid = child.Objectguid,
-                Text = (child.Housenum != null? child.Housenum : "") + " " + (child.Housetype != null ? ((HouseType)child.Housetype).GetDescription() : "") + " " + (child.Addnum1 != null ? child.Addnum1 : ""),
-                ObjectLevel = GarAddressLevel.Building,
-            };
-
-foreach (var number in query)
-{
-    Console.WriteLine();
-    Console.WriteLine(number.ObjectId);
-    Console.WriteLine(number.ObjectGuid);
-    Console.WriteLine(number.Text);
-    Console.WriteLine(number.ObjectLevel);
-    Console.WriteLine();
-}
-
 
 if (app.Environment.IsDevelopment())
 {
