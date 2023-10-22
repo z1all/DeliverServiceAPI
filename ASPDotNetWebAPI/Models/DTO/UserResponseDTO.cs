@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ASPDotNetWebAPI.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace ASPDotNetWebAPI.Models.DTO
 {

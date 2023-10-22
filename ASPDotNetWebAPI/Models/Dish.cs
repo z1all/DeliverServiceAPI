@@ -1,10 +1,7 @@
-﻿namespace ASPDotNetWebAPI.Models
-{
-    public enum DishCategory
-    {
-        Wok, Pizza, Soup, Desert, Drink
-    }
+﻿using ASPDotNetWebAPI.Models.Enums;
 
+namespace ASPDotNetWebAPI.Models
+{
     public class Dish
     {
         public Guid Id { get; set; }

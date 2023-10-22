@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
+using ASPDotNetWebAPI.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace ASPDotNetWebAPI.Models.DTO

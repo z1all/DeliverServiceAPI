@@ -1,14 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+﻿using ASPDotNetWebAPI.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace ASPDotNetWebAPI.Models
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum Gender
-    {
-        Male, Female
-    }
-
     public class User
     {
         public Guid Id { get; set; }
