@@ -2,7 +2,6 @@
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace ASPDotNetWebAPI.Controllers
 {
