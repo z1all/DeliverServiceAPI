@@ -1,6 +1,5 @@
 ﻿using ASPDotNetWebAPI.Models.DTO;
 using System.Net;
-using System.Text.Json;
 
 namespace ASPDotNetWebAPI.Middlewares
 {
