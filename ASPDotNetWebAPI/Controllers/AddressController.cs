@@ -30,7 +30,7 @@ namespace ASPDotNetWebAPI.Controllers
         }
 
         /// <summary>
-        /// Get a chain of elements from the root to an object with objectGUID
+        /// Get a chain of elements from the root to an object with objectGuid
         /// </summary>
         [HttpGet("getaddresschain")]
         [ProducesResponseType(typeof(List<SearchAddressDTO>), StatusCodes.Status200OK)]

@@ -7,7 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
-using NLog;
 using NLog.Web;
 
 var builder = WebApplication.CreateBuilder(args);
