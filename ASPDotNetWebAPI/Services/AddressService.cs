@@ -13,32 +13,52 @@ namespace ASPDotNetWebAPI.Services
         {
             _dbContext = dbContext;
         }
-
-        public IEnumerable<SearchAddressDTO> GetChildObjects(int parentObjectId, string? name)
+        
+        public async Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name)
         {
-            var addressElement =
-                from fromParentTo in _dbContext.Hierarchys
-                join child in _dbContext.AddressElements
-                on fromParentTo.Objectid equals child.Objectid
-                where fromParentTo.Parentobjid == parentObjectId && name != null && child.Name.Contains(name)
-                select PackToSearchAddress(child);
+            var addressElement = await
+                _dbContext.Hierarchys
+                .Join(_dbContext.AddressElements,
+                    fromParentTo => fromParentTo.Objectid,
+                    child => child.Objectid,
+                    (fromParentTo, child) => new { fromParentTo, child })
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
+                .Select(x => new SearchAddressDTO(x.child)).Take(15).ToListAsync();
 
-            var houses =
-                from fromParentTo in _dbContext.Hierarchys
-                join child in _dbContext.Houses
-                on fromParentTo.Objectid equals child.Objectid
-                where fromParentTo.Parentobjid == parentObjectId && name != null && GetFullName(child).Contains(name)
-                select PackToSearchAddress(child);
+            var houses = await
+                _dbContext.Hierarchys
+                .Join(_dbContext.Houses,
+                    fromParentTo => fromParentTo.Objectid,
+                    child => child.Objectid,
+                    (fromParentTo, child) => new { fromParentTo, child })
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
+                .Select(x => new SearchAddressDTO(x.child, GetFullName(x.child))).Take(15).ToListAsync();
 
-            return addressElement.Concat(houses);
+            var elements = addressElement.Concat(houses).ToList();
+
+            if(name == null)
+            { 
+                return elements;
+            }
+
+            var answer = new List<SearchAddressDTO>();
+            foreach (var element in elements)
+            {
+                if (element.Text.Contains(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    answer.Add(element);
+                }
+            }
+
+            return answer;
         }
 
-        public async Task<IEnumerable<SearchAddressDTO>> GetPathFromRootToObject(Guid ObjectGuid)
+        public async Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid)
         {
             var ObjectId = await GetObjectIdAsync(ObjectGuid);
             if (ObjectId == null)
             {
-                return Enumerable.Empty<SearchAddressDTO>();
+                return new List<SearchAddressDTO>();
             }
 
             var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
@@ -52,14 +72,14 @@ namespace ASPDotNetWebAPI.Services
                 var element = await addressElementsPath.FirstOrDefaultAsync(addressElement => addressElement.Objectid == int.Parse(objectId));
                 if (element != null)
                 {
-                    addressElementsPathOrded.Add(PackToSearchAddress(element));
+                    addressElementsPathOrded.Add(new SearchAddressDTO(element));
                 }
             }
 
             if (path.Length != addressElementsPathOrded.Count)
             {
                 var house = await _dbContext.Houses.FirstAsync(house => house.Objectid == ObjectId);
-                addressElementsPathOrded.Add(PackToSearchAddress(house));
+                addressElementsPathOrded.Add(new SearchAddressDTO(house, GetFullName(house)));
             }
 
             return addressElementsPathOrded;
@@ -84,29 +104,7 @@ namespace ASPDotNetWebAPI.Services
             }
         }
 
-        private SearchAddressDTO PackToSearchAddress(House house)
-        {
-            return new SearchAddressDTO
-            {
-                ObjectId = house.Objectid,
-                ObjectGuid = house.Objectguid,
-                Text = GetFullName(house),
-                ObjectLevel = GarAddressLevel.Building
-            };
-        }
-
-        private SearchAddressDTO PackToSearchAddress(AddressElement addressElement)
-        {
-            return new SearchAddressDTO
-            {
-                ObjectId = addressElement.Objectid,
-                ObjectGuid = addressElement.Objectguid,
-                Text = addressElement.Typename + " " + addressElement.Name,
-                ObjectLevel = (GarAddressLevel)int.Parse(addressElement.Level)
-            };
-        }
-
-        private string GetFullName(House house)
+        private static string GetFullName(House house)
         {
             string name = "";
 
