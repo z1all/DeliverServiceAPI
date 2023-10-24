@@ -4,7 +4,7 @@ namespace ASPDotNetWebAPI.Services
 {
     public interface IAddressService
     {
-        IEnumerable<SearchAddressDTO> GetChildObjects(int parentObjectId, string? name);
-        Task<IEnumerable<SearchAddressDTO>> GetPathFromRootToObject(Guid ObjectGuid);
+        Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name);
+        Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid);
     }
 }

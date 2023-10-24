@@ -1,7 +1,8 @@
 ﻿using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+
 namespace ASPDotNetWebAPI.Controllers
 {
     [Route("api/[controller]")]
@@ -10,33 +11,34 @@ namespace ASPDotNetWebAPI.Controllers
     {
         private readonly IAddressService _addressService;
 
-        public AddressController(IAddressService addressService) 
-        { 
+        public AddressController(IAddressService addressService)
+        {
             _addressService = addressService;
         }
 
         [HttpGet("search")]
-        public IEnumerable<SearchAddressDTO> GetAddress([FromQuery] int? parentObjectId, [FromQuery] string? query)
+        public async Task<List<SearchAddressDTO>> GetAddress([FromQuery] int? parentObjectId, [FromQuery] string? query)
         {
-            var answer = _addressService.GetChildObjects(parentObjectId != null ? (int)parentObjectId : 0, query);
-
-            //foreach (var number in answer)
-            //{
-            //    Console.WriteLine();
-            //    Console.WriteLine(number.ObjectId);
-            //    Console.WriteLine(number.ObjectGuid);
-            //    Console.WriteLine(number.Text);
-            //    Console.WriteLine(number.ObjectLevel);
-            //    Console.WriteLine();
-            //}
+            var answer = await _addressService.GetChildObjectsAsync(parentObjectId != null ? (int)parentObjectId : 0, query);
 
             return answer;
         }
 
         [HttpGet("getaddresschain")]
-        public IEnumerable<SearchAddressDTO> GetAddressChain([FromQuery] Guid? ObjectGuid)
+        public async Task<ActionResult<List<SearchAddressDTO>>> GetAddressChain([FromQuery] Guid ObjectGuid)
         {
-            throw new NotImplementedException();
+            var answer = await _addressService.GetPathFromRootToObjectAsync(ObjectGuid);
+
+            if (answer.IsNullOrEmpty())
+            {
+                return NotFound(new ResponseDTO()
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Message = $"Not found object with ObjectGuid={ObjectGuid}"
+                });
+            }
+
+            return answer;
         }
     }
 }

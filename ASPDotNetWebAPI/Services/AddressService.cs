@@ -2,7 +2,6 @@
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -14,32 +13,52 @@ namespace ASPDotNetWebAPI.Services
         {
             _dbContext = dbContext;
         }
-
-        public IEnumerable<SearchAddressDTO> GetChildObjects(int parentObjectId, string? name)
+        
+        public async Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name)
         {
-            IEnumerable<SearchAddressDTO> addressElement =
-                from fromParentTo in _dbContext.Hierarchys
-                join child in _dbContext.AddressElements
-                on fromParentTo.Objectid equals child.Objectid
-                where fromParentTo.Parentobjid == parentObjectId && (name != null && child.Name.Contains(name) || name == null)
-                select new SearchAddressDTO(child);
+            var addressElement = await
+                _dbContext.Hierarchys
+                .Join(_dbContext.AddressElements,
+                    fromParentTo => fromParentTo.Objectid,
+                    child => child.Objectid,
+                    (fromParentTo, child) => new { fromParentTo, child })
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
+                .Select(x => new SearchAddressDTO(x.child)).Take(15).ToListAsync();
 
-            IEnumerable<SearchAddressDTO> houses =
-                from fromParentTo in _dbContext.Hierarchys
-                join child in _dbContext.Houses
-                on fromParentTo.Objectid equals child.Objectid
-                where fromParentTo.Parentobjid == parentObjectId && (name != null && GetFullName(child).Contains(name) || name == null)
-                select new SearchAddressDTO(child, GetFullName(child));
+            var houses = await
+                _dbContext.Hierarchys
+                .Join(_dbContext.Houses,
+                    fromParentTo => fromParentTo.Objectid,
+                    child => child.Objectid,
+                    (fromParentTo, child) => new { fromParentTo, child })
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
+                .Select(x => new SearchAddressDTO(x.child, GetFullName(x.child))).Take(15).ToListAsync();
 
-            return addressElement.Concat(houses);
+            var elements = addressElement.Concat(houses).ToList();
+
+            if(name == null)
+            { 
+                return elements;
+            }
+
+            var answer = new List<SearchAddressDTO>();
+            foreach (var element in elements)
+            {
+                if (element.Text.Contains(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    answer.Add(element);
+                }
+            }
+
+            return answer;
         }
 
-        public async Task<IEnumerable<SearchAddressDTO>> GetPathFromRootToObject(Guid ObjectGuid)
+        public async Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid)
         {
             var ObjectId = await GetObjectIdAsync(ObjectGuid);
             if (ObjectId == null)
             {
-                return Enumerable.Empty<SearchAddressDTO>();
+                return new List<SearchAddressDTO>();
             }
 
             var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
