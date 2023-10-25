@@ -74,6 +74,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
 // Adding services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<IDishService, DishService>();
 
 // Cleaning of logger providers
 builder.Logging.ClearProviders();
