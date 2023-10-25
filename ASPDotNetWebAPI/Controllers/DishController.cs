@@ -17,20 +17,40 @@ namespace ASPDotNetWebAPI.Controllers
             _dishService = dishService;
         }
 
+        /// <summary>
+        /// Get a list of dishes
+        /// </summary>   
         [HttpGet]
+        [ProducesResponseType(typeof(DishPagedListDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<DishPagedListDTO> GetDishesAsync([FromQuery] DishCategory?[] category, [FromQuery] bool isVegetarian = false, [FromQuery] DishSorting dishSorting = DishSorting.RatingAsc, [FromQuery] int page = 1)
         {
             return await _dishService.GetDishesAsync(category, isVegetarian, dishSorting, page);
         }
 
+        /// <summary>
+        /// Get information about concrete dish
+        /// </summary>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(DishDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<DishDTO> GetDishInfoAsync(Guid id)
         {
             return await _dishService.GetDishAsync(id);
         }
 
+        /// <summary>
+        /// Checks if user is able to ser rating of the dish 
+        /// </summary>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="403">Forbidden</response>
         [HttpGet("{id}/rating/check")]
         [CustomAuthorize]
+        [ProducesResponseType(typeof(DishDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<bool> CheckSetRating(Guid id)
         {
             var token = JWTTokenService.GetTokenFromHeader(HttpContext);
@@ -38,8 +58,17 @@ namespace ASPDotNetWebAPI.Controllers
             return await _dishService.CheckToSetRatingAsync(id, token);
         }
 
+        /// <summary>
+        /// Set a rating for a dish
+        /// </summary>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="403">Forbidden</response>
         [HttpPost("{id}/rating")]
         [CustomAuthorize]
+        [ProducesResponseType(typeof(DishDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<DishDTO> SetRating(Guid id, [FromQuery] int value)
         {
             var token = JWTTokenService.GetTokenFromHeader(HttpContext);
@@ -48,6 +77,3 @@ namespace ASPDotNetWebAPI.Controllers
         }
     }
 }
-// Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySWQiOiI0OTljYTVlOS0zZjRmLTRmMGMtOTllOS03Yjc1NmE4ODE3OTAiLCJKVEkiOiIxODRiNGZiMy01OWVkLTRhM2EtOTg4NS1jZDgzOGI5YjlhZDMiLCJuYmYiOjE2OTgyNTkzMTgsImV4cCI6MTY5ODI2MjkxNywiaWF0IjoxNjk4MjU5MzE4LCJpc3MiOiJISVRzIn0.zJL_O-Dpn-uAMeXSy8nOm2ZEwgi_o4U7i7X4FQzzLac
-
-// 4ee393fc-af18-4636-be23-08dac7a0ede1
