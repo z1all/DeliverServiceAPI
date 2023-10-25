@@ -10,6 +10,7 @@ namespace ASPDotNetWebAPI.Models
         public string Description { get; set; }
         public bool IsVegetairian { get; set; }
         public string Image { get; set; }
+        public decimal? Rating { get; set; }
         public DishCategory Category { get; set; }
 
         public ICollection<Rating> Ratings { get; set; }

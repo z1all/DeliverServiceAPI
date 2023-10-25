@@ -1,4 +1,5 @@
-﻿using ASPDotNetWebAPI.Models.DTO;
+﻿using ASPDotNetWebAPI.Exceptions;
+using ASPDotNetWebAPI.Models.DTO;
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +25,14 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await _next(httpContext);
             }
+            catch (BadRequestException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.BadRequest, ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.NotFound, ex.Message);
+            }
             catch (InvalidOperationException ex)
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Operation execution error!");
@@ -36,14 +45,6 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Text encoding error!");
             }
-            //catch (ArgumentNullException ex)
-            //{
-            //    await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
-            //}
-            //catch (ArgumentOutOfRangeException ex)
-            //{
-            //    await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
-            //}
             catch (ArgumentException ex)
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
@@ -52,10 +53,6 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Password verification error!");
             }
-            //catch (DbUpdateConcurrencyException ex)
-            //{
-            //    await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "An error occurred while saving the data. Please try again later.");
-            //}
             catch (DbUpdateException ex)
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "An error occurred while saving the data. Please try again later.");

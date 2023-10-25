@@ -2,7 +2,7 @@
 {
     public class DishPagedListDTO
     {
-        public List<DishDTO> Dishes { get; set; }
+        public List<DishDTO>? Dishes { get; set; }
         public PageInfoDTO Pagination { get; set; }
     }
 }

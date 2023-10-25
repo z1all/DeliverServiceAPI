@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <Folder Include="Migrations\" />
-    <Folder Include="Services\" />
+    <Folder Include="Exeptions\" />
   </ItemGroup>
 
   <PropertyGroup>
