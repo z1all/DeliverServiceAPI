@@ -1,10 +1,6 @@
 ﻿using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -37,7 +33,7 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = GeneratJWTToken(user)
+                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
             };
         }
 
@@ -56,13 +52,13 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = GeneratJWTToken(user)
+                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
             };
         }
 
         public async Task LogoutAsync(string token)
         {
-            var JTI = GetValueFromToken(token, "UserId");
+            var JTI = JWTTokenService.GetValueFromToken(token, "UserId");
 
             await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI });
             await _dbContext.SaveChangesAsync();
@@ -70,7 +66,7 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<UserResponseDTO?> GetProfileAsync(string token)
         {
-            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
+            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
@@ -93,7 +89,7 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<bool> EditProfileAsync(string token, UserEditRequestDTO model)
         {
-            Guid userGuid = Guid.Parse(GetValueFromToken(token, "UserId"));
+            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
             if (user == null)
@@ -116,36 +112,6 @@ namespace ASPDotNetWebAPI.Services
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
 
             return user != null;
-        }
-
-        private string GeneratJWTToken(User user)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(secretKey);
-
-            var tokenDescription = new SecurityTokenDescriptor()
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim("UserId", user.Id.ToString()),
-                    new Claim("JTI", Guid.NewGuid().ToString())
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                Issuer = "HITs"
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescription);
-            return tokenHandler.WriteToken(token);
-        }
-
-        private string GetValueFromToken(string token, string type)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == type);
-
-            return userGuidStr.Value;
         }
     }
 }

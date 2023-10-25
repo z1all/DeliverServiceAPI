@@ -3,12 +3,7 @@ using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Drawing;
-using static System.Net.Mime.MediaTypeNames;
-using System.Xml.Linq;
 using ASPDotNetWebAPI.Exceptions;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -23,7 +18,7 @@ namespace ASPDotNetWebAPI.Services
             _configuration = configuration;
         }
 
-        public async Task<DishPagedListDTO> GetDishes(DishCategory?[] category, bool isVegetarian, DishSorting dishSorting, int page)
+        public async Task<DishPagedListDTO> GetDishesAsync(DishCategory?[] category, bool isVegetarian, DishSorting dishSorting, int page)
         {
             var dishes = await _dbContext.Dishes
                 .Where(dish => (isVegetarian == true ? dish.IsVegetairian : true) && (category.IsNullOrEmpty() ? true : category.Contains(dish.Category))).
@@ -40,7 +35,7 @@ namespace ASPDotNetWebAPI.Services
                 })
                 .ToListAsync();
 
-            SortDish(dishSorting, dishes);
+            SortDishes(dishSorting, dishes);
 
             var countOfDishOnPageStr = _configuration.GetValue<string>("ApiSettings:CountOfDishOnPage");
             int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
@@ -65,13 +60,13 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<DishDTO> GetDish(Guid id)
+        public async Task<DishDTO> GetDishAsync(Guid id)
         {
             var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
 
             if (dish == null)
             {
-                throw new BadRequestException($"Dish with Guid {id} not found");
+                throw new BadRequestException($"Dish with Guid {id} not found.");
             }
 
             return new DishDTO()
@@ -87,17 +82,64 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public Task<bool> CheckToSetRating(Guid id, string token)
+        public async Task<bool> CheckToSetRatingAsync(Guid id, string token)
         {
-            throw new NotImplementedException();
+            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
+            if (dish == null)
+            {
+                throw new NotFoundException($"Dish with Guid {id} not found.");
+            }
+
+            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+
+            var dishInCarts = await
+                _dbContext.DishInCarts
+                .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == id && dishInCarts.OrderId != null);
+
+            if (dishInCarts == null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        public Task SetRating(Guid id, string token, int ratingScore)
+        public async Task SetRatingAsync(Guid id, string token, int ratingScore)
         {
-            throw new NotImplementedException();
+            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
+            if (dish == null)
+            {
+                throw new NotFoundException($"Dish with Guid {id} not found.");
+            }
+
+            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+            var user = await _dbContext.Users.FirstAsync(user => user.Id == id);
+
+            if (!await CheckToSetRatingAsync(id, token))
+            {
+                throw new BadRequestException($"You can't rate a dish with an Guid {id}.");
+            }
+
+            var rating = await _dbContext.Ratings.FirstOrDefaultAsync(rating => rating.UserId == userId && rating.DishId == id);
+            if (rating == null)
+            {
+                var ratingModel = new Rating()
+                {
+                    Value = ratingScore,
+                    Dish = dish,
+                    User = user
+                };
+                await _dbContext.AddAsync(ratingModel);
+            }
+            else
+            {
+                rating.Value = ratingScore;
+            }
+
+            await _dbContext.SaveChangesAsync();
         }
 
-        private void SortDish(DishSorting dishSorting, List<DishDTO> dishes)
+        private void SortDishes(DishSorting dishSorting, List<DishDTO> dishes)
         {
             switch (dishSorting)
             {
