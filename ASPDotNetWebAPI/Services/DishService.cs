@@ -20,6 +20,11 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<DishPagedListDTO> GetDishesAsync(DishCategory?[] category, bool isVegetarian, DishSorting dishSorting, int page)
         {
+            if (page < 1)
+            {
+                throw new BadRequestException($"Invalid value for attribute page. The page number cannot be less than 1. Your number: {page}.");
+            }
+
             var dishes = await _dbContext.Dishes
                 .Where(dish => (isVegetarian == true ? dish.IsVegetairian : true) && (category.IsNullOrEmpty() ? true : category.Contains(dish.Category))).
                 Select(dish => new DishDTO()
@@ -35,7 +40,7 @@ namespace ASPDotNetWebAPI.Services
                 })
                 .ToListAsync();
 
-            SortDishes(dishSorting, dishes);
+            dishes = SortDishes(dishSorting, dishes);
 
             var countOfDishOnPageStr = _configuration.GetValue<string>("ApiSettings:CountOfDishOnPage");
             int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
@@ -53,7 +58,7 @@ namespace ASPDotNetWebAPI.Services
                 Dishes = dishes,
                 Pagination = new PageInfoDTO()
                 {
-                    Size = countOfDishOnPage,
+                    Size = dishes.Count(),
                     Count = countOfPages,
                     Current = page,
                 }
@@ -66,7 +71,7 @@ namespace ASPDotNetWebAPI.Services
 
             if (dish == null)
             {
-                throw new BadRequestException($"Dish with Guid {id} not found.");
+                throw new NotFoundException($"Dish with Guid {id} not found.");
             }
 
             return new DishDTO()
@@ -104,23 +109,23 @@ namespace ASPDotNetWebAPI.Services
             return true;
         }
 
-        public async Task SetRatingAsync(Guid id, string token, int ratingScore)
+        public async Task<DishDTO> SetRatingAsync(Guid dishId, string token, int ratingScore)
         {
-            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
+            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == dishId);
             if (dish == null)
             {
-                throw new NotFoundException($"Dish with Guid {id} not found.");
+                throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
             var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
-            var user = await _dbContext.Users.FirstAsync(user => user.Id == id);
+            var user = await _dbContext.Users.FirstAsync(user => user.Id == userId);
 
-            if (!await CheckToSetRatingAsync(id, token))
+            if (!await CheckToSetRatingAsync(dishId, token))
             {
-                throw new BadRequestException($"You can't rate a dish with an Guid {id}.");
+                throw new BadRequestException($"You can't rate a dish with an Guid {dishId}. To do this, you need to buy this dish.");
             }
 
-            var rating = await _dbContext.Ratings.FirstOrDefaultAsync(rating => rating.UserId == userId && rating.DishId == id);
+            var rating = await _dbContext.Ratings.FirstOrDefaultAsync(rating => rating.UserId == userId && rating.DishId == dishId);
             if (rating == null)
             {
                 var ratingModel = new Rating()
@@ -137,9 +142,36 @@ namespace ASPDotNetWebAPI.Services
             }
 
             await _dbContext.SaveChangesAsync();
+            await UpdateRatingAsync(dishId);
+
+            return new DishDTO()
+            {
+                Id = dish.Id,
+                Name = dish.Name,
+                Description = dish.Description,
+                Price = dish.Price,
+                Image = dish.Image,
+                IsVegetairian = dish.IsVegetairian,
+                Rating = dish.Rating,
+                Category = dish.Category
+            };
         }
 
-        private void SortDishes(DishSorting dishSorting, List<DishDTO> dishes)
+        private async Task UpdateRatingAsync(Guid dishId)
+        {
+            var ratings = _dbContext.Ratings.Where(rating => rating.DishId == dishId);
+            double sumRatings = await ratings.SumAsync(rating => rating.Value);
+            int countRatings = await ratings.CountAsync();
+
+            decimal? averageRating = (decimal?)(sumRatings / countRatings);
+
+            var dish = await _dbContext.Dishes.FirstAsync(dish => dish.Id == dishId);
+            dish.Rating = averageRating;
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        private List<DishDTO> SortDishes(DishSorting dishSorting, List<DishDTO> dishes)
         {
             switch (dishSorting)
             {
@@ -162,6 +194,8 @@ namespace ASPDotNetWebAPI.Services
                     dishes = dishes.OrderByDescending(dish => dish.Rating).ToList();
                     break;
             }
+
+            return dishes;
         }
     }
 }
