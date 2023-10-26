@@ -14,6 +14,6 @@ namespace ASPDotNetWebAPI.Models
         public DishCategory Category { get; set; }
 
         public ICollection<Rating> Ratings { get; set; }
-        public ICollection<DishInCart> DishInCarts { get; set; }
+        // public ICollection<DishInCart> DishInCarts { get; set; }
     }
 }

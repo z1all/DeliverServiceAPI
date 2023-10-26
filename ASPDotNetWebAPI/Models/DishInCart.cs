@@ -2,6 +2,7 @@
 {
     public class DishInCart
     {
+        public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public Guid DishId { get; set; }
         public Guid? OrderId { get; set; }
