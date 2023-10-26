@@ -4,8 +4,8 @@ namespace ASPDotNetWebAPI.Services
 {
     public interface IBasketService
     {
-        Task<List<DishBasketDTO>> GetDishInBasket(Guid userId);
-        Task PutDishInBasket(Guid userId, Guid dishId);
-        Task RemoveDishFromBasket(Guid userId, Guid dishId, bool increase);
+        Task<List<DishBasketDTO>> GetDishInBasketAsync(Guid userId);
+        Task PutDishInBasketAsync(Guid userId, Guid dishId);
+        Task RemoveDishFromBasketAsync(Guid userId, Guid dishId, bool increase);
     }
 }

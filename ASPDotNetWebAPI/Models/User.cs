@@ -17,7 +17,7 @@ namespace ASPDotNetWebAPI.Models
         public Guid? AddressId { get; set; }
 
         public ICollection<Rating> Ratings { get; set; }
-        public ICollection<DishInCart> DishInCarts { get; set; }
+        // public ICollection<DishInCart> DishInCarts { get; set; }
         public ICollection<Order> Orders { get; set; }
     }
 }

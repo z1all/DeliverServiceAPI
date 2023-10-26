@@ -39,16 +39,16 @@ namespace ASPDotNetWebAPI.Models
             // Adding restrictions for the DishInCart link
             modelBuilder.Entity<DishInCart>()
                 .HasOne(dishInCart => dishInCart.Dish)
-                .WithMany(dish => dish.DishInCarts)
+                .WithMany(/*dish => dish.DishInCarts*/)
                 .HasForeignKey(dishInCart => dishInCart.DishId)
                 .IsRequired();
             modelBuilder.Entity<DishInCart>()
                 .HasOne(dishInCart => dishInCart.User)
-                .WithMany(user => user.DishInCarts)
+                .WithMany(/*user => user.DishInCarts*/)
                 .HasForeignKey(dishInCart => dishInCart.UserId)
                 .IsRequired();
             modelBuilder.Entity<DishInCart>()
-                .HasKey(dishInCart => new { dishInCart.UserId, dishInCart.DishId });
+                .HasKey(dishInCart => dishInCart.Id);
 
             // Adding restrictions for the Order link
             modelBuilder.Entity<Order>()
