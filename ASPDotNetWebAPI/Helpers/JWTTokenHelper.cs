@@ -29,13 +29,25 @@ namespace ASPDotNetWebAPI.Helpers
             return tokenHandler.WriteToken(token);
         }
 
-        public static string GetValueFromToken(string token, string type)
+        public static string GetValueFromToken(HttpContext httpContext, string type)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == type);
+            var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == type);
 
             return userGuidStr.Value;
+        }
+
+        public static Guid GetUserIdFromToken(HttpContext httpContext)
+        {
+            var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == "UserId");
+
+            return Guid.Parse(userGuidStr.Value);
+        }
+
+        public static Guid GetJTIFromToken(HttpContext httpContext)
+        {
+            var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == "JTI");
+
+            return Guid.Parse(userGuidStr.Value);
         }
 
         public static string GetTokenFromHeader(HttpContext httpContext)

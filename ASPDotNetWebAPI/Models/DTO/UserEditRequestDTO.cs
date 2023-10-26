@@ -16,7 +16,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         [Required]
         public Gender Gender { get; set; }
         public Guid? AddressId { get; set; }
-        [CustomPhone(Nullable = false)]
+        [CustomPhone(Nullable = true)]
         public string? PhoneNumber { get; set; }
     }
 }

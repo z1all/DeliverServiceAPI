@@ -54,9 +54,9 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<bool> CheckSetRating(Guid id)
         {
-            var token = JWTTokenHelper.GetTokenFromHeader(HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            return await _dishService.CheckToSetRatingAsync(id, token);
+            return await _dishService.CheckToSetRatingAsync(id, userId);
         }
 
         /// <summary>
@@ -72,9 +72,9 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<DishDTO> SetRating(Guid id, [FromQuery] int value)
         {
-            var token = JWTTokenHelper.GetTokenFromHeader(HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            return await _dishService.SetRatingAsync(id, token, value);
+            return await _dishService.SetRatingAsync(id, userId, value);
         }
     }
 }
