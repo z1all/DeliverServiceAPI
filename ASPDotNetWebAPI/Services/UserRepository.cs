@@ -1,4 +1,5 @@
-﻿using ASPDotNetWebAPI.Models;
+﻿using ASPDotNetWebAPI.Helpers;
+using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,7 +34,7 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
+                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
             };
         }
 
@@ -52,23 +53,19 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
+                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
             };
         }
 
-        public async Task LogoutAsync(string token)
+        public async Task LogoutAsync(Guid JTI)
         {
-            var JTI = JWTTokenService.GetValueFromToken(token, "UserId");
-
-            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI });
+            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.ToString() });
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<UserResponseDTO?> GetProfileAsync(string token)
+        public async Task<UserResponseDTO?> GetProfileAsync(Guid UserId)
         {
-            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
-
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
 
             if (user == null)
             {
@@ -87,11 +84,9 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> EditProfileAsync(string token, UserEditRequestDTO model)
+        public async Task<bool> EditProfileAsync(Guid UserId, UserEditRequestDTO model)
         {
-            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
-
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
             if (user == null)
             {
                 return false;
@@ -103,6 +98,8 @@ namespace ASPDotNetWebAPI.Services
             user.Gender = model.Gender;
             user.AddressId = model.AddressId;
             user.PhoneNumber = model.PhoneNumber;
+
+            await _dbContext.SaveChangesAsync();
 
             return true;
         }

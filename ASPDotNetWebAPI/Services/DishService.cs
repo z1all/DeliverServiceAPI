@@ -4,6 +4,7 @@ using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ASPDotNetWebAPI.Exceptions;
+using ASPDotNetWebAPI.Helpers;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -65,13 +66,13 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<DishDTO> GetDishAsync(Guid id)
+        public async Task<DishDTO> GetDishAsync(Guid dishId)
         {
-            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
+            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == dishId);
 
             if (dish == null)
             {
-                throw new NotFoundException($"Dish with Guid {id} not found.");
+                throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
             return new DishDTO()
@@ -87,19 +88,17 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> CheckToSetRatingAsync(Guid id, string token)
+        public async Task<bool> CheckToSetRatingAsync(Guid dishId, Guid userId)
         {
-            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == id);
+            var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == dishId);
             if (dish == null)
             {
-                throw new NotFoundException($"Dish with Guid {id} not found.");
+                throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
-
-            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
 
             var dishInCarts = await
                 _dbContext.DishInCarts
-                .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == id && dishInCarts.OrderId != null);
+                .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
 
             if (dishInCarts == null)
             {
@@ -109,7 +108,7 @@ namespace ASPDotNetWebAPI.Services
             return true;
         }
 
-        public async Task<DishDTO> SetRatingAsync(Guid dishId, string token, int ratingScore)
+        public async Task<DishDTO> SetRatingAsync(Guid dishId, Guid userId, int ratingScore)
         {
             var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == dishId);
             if (dish == null)
@@ -117,10 +116,9 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
-            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
             var user = await _dbContext.Users.FirstAsync(user => user.Id == userId);
 
-            if (!await CheckToSetRatingAsync(dishId, token))
+            if (!await CheckToSetRatingAsync(dishId, userId))
             {
                 throw new BadRequestException($"You can't rate a dish with an Guid {dishId}. To do this, you need to buy this dish.");
             }

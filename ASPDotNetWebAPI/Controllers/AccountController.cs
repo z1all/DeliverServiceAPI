@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
+using ASPDotNetWebAPI.Helpers;
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -109,9 +110,9 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ResponseDTO>> Logout()
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
 
-            await _userRepository.LogoutAsync(token);
+            await _userRepository.LogoutAsync(JTI);
 
             return new ResponseDTO()
             {
@@ -132,9 +133,9 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<UserResponseDTO>> GetUserInfo()
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            var userInfo = await _userRepository.GetProfileAsync(token);
+            var userInfo = await _userRepository.GetProfileAsync(userId);
             if (userInfo == null)
             {
                 return NotFound(new ResponseDTO()
@@ -178,9 +179,9 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> EditUserInfo([FromBody] UserEditRequestDTO model)
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            var hasBeenUpdated = await _userRepository.EditProfileAsync(token, model);
+            var hasBeenUpdated = await _userRepository.EditProfileAsync(userId, model);
             if (!hasBeenUpdated)
             {
                 return NotFound(new ResponseDTO()

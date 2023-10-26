@@ -13,6 +13,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         [MinLength(6)]
         [CustomPassword(Nullable = false)]
         public string Password { get; set; }
+        [Required]
         [MinLength(1)]
         [EmailAddress]
         public string Email { get; set; }
@@ -20,7 +21,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         public DateTime? BirthDate { get; set; }
         [Required]
         public Gender Gender { get; set; }
-        [CustomPhone(Nullable = false)]
+        [CustomPhone(Nullable = true)]
         public string? PhoneNumber { get; set; }
     }
 }
