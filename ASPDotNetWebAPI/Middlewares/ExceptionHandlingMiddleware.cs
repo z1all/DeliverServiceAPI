@@ -1,6 +1,7 @@
 ﻿using ASPDotNetWebAPI.Exceptions;
 using ASPDotNetWebAPI.Models.DTO;
 using BCrypt.Net;
+using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Net;
@@ -64,6 +65,10 @@ namespace ASPDotNetWebAPI.Middlewares
             catch (SecurityTokenEncryptionFailedException ex)
             {
                 await HandlExceptionAsync(LogLevel.Warning, httpContext, ex, HttpStatusCode.InternalServerError, "Error processing a secure token!");
+            }
+            catch(RuntimeBinderException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
             }
             catch (Exception ex)
             {

@@ -8,6 +8,6 @@ namespace ASPDotNetWebAPI.Services
         Task<DishPagedListDTO> GetDishesAsync(DishCategory? [] category, bool isVegetarian, DishSorting dishSorting, int page);
         Task<DishDTO> GetDishAsync(Guid id);
         Task<bool> CheckToSetRatingAsync(Guid id, string token);
-        Task SetRatingAsync(Guid id, string token, int ratingScore);
+        Task<DishDTO> SetRatingAsync(Guid id, string token, int ratingScore);
     }
 }
