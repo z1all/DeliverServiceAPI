@@ -4,6 +4,7 @@ using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ASPDotNetWebAPI.Exceptions;
+using ASPDotNetWebAPI.Helpers;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -95,7 +96,7 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {id} not found.");
             }
 
-            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+            var userId = Guid.Parse(JWTTokenHelper.GetValueFromToken(token, "UserId"));
 
             var dishInCarts = await
                 _dbContext.DishInCarts
@@ -117,7 +118,7 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
-            var userId = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+            var userId = Guid.Parse(JWTTokenHelper.GetValueFromToken(token, "UserId"));
             var user = await _dbContext.Users.FirstAsync(user => user.Id == userId);
 
             if (!await CheckToSetRatingAsync(dishId, token))

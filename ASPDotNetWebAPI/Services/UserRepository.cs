@@ -1,4 +1,5 @@
-﻿using ASPDotNetWebAPI.Models;
+﻿using ASPDotNetWebAPI.Helpers;
+using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,7 +34,7 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
+                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
             };
         }
 
@@ -52,13 +53,13 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = JWTTokenService.GeneratJWTToken(user, secretKey)
+                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
             };
         }
 
         public async Task LogoutAsync(string token)
         {
-            var JTI = JWTTokenService.GetValueFromToken(token, "UserId");
+            var JTI = JWTTokenHelper.GetValueFromToken(token, "UserId");
 
             await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI });
             await _dbContext.SaveChangesAsync();
@@ -66,7 +67,7 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<UserResponseDTO?> GetProfileAsync(string token)
         {
-            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+            Guid userGuid = Guid.Parse(JWTTokenHelper.GetValueFromToken(token, "UserId"));
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
 
@@ -89,7 +90,7 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<bool> EditProfileAsync(string token, UserEditRequestDTO model)
         {
-            Guid userGuid = Guid.Parse(JWTTokenService.GetValueFromToken(token, "UserId"));
+            Guid userGuid = Guid.Parse(JWTTokenHelper.GetValueFromToken(token, "UserId"));
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userGuid);
             if (user == null)

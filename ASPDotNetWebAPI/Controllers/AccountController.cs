@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
+using ASPDotNetWebAPI.Helpers;
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -109,7 +110,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ResponseDTO>> Logout()
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var token = JWTTokenHelper.GetTokenFromHeader(HttpContext);
 
             await _userRepository.LogoutAsync(token);
 
@@ -132,7 +133,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<UserResponseDTO>> GetUserInfo()
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var token = JWTTokenHelper.GetTokenFromHeader(HttpContext);
 
             var userInfo = await _userRepository.GetProfileAsync(token);
             if (userInfo == null)
@@ -178,7 +179,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> EditUserInfo([FromBody] UserEditRequestDTO model)
         {
-            var token = JWTTokenService.GetTokenFromHeader(HttpContext);
+            var token = JWTTokenHelper.GetTokenFromHeader(HttpContext);
 
             var hasBeenUpdated = await _userRepository.EditProfileAsync(token, model);
             if (!hasBeenUpdated)

@@ -4,9 +4,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace ASPDotNetWebAPI.Services
+namespace ASPDotNetWebAPI.Helpers
 {
-    public static class JWTTokenService
+    public static class JWTTokenHelper
     {
         public static string GeneratJWTToken(User user, string secretKey)
         {
