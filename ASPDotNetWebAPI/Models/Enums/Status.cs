@@ -5,6 +5,7 @@ namespace ASPDotNetWebAPI.Models.Enums
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Status
     {
-        InProcess, Delivered
+        InProcess = 1, 
+        Delivered = 2
     }
 }
