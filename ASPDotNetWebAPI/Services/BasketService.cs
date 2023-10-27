@@ -57,7 +57,8 @@ namespace ASPDotNetWebAPI.Services
                 await _dbContext.DishInCarts.AddAsync(new DishInCart()
                 {
                     Dish = dish,
-                    User = user
+                    User = user,
+                    Count = 1
                 });
             }
  
