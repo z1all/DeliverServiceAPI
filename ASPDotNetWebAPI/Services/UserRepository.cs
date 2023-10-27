@@ -71,13 +71,13 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<UserResponseDTO> GetProfileAsync(Guid UserId)
+        public async Task<UserResponseDTO> GetProfileAsync(Guid userId)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
 
             if (user == null)
             {
-                throw new NotFoundException($"User with Guid {userGuid} not found!");
+                throw new NotFoundException($"User with Guid {userId} not found!");
             }
 
             return new UserResponseDTO()
@@ -92,12 +92,12 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task EditProfileAsync(Guid UserId, UserEditRequestDTO model)
+        public async Task EditProfileAsync(Guid userId, UserEditRequestDTO model)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (user == null)
             {
-                throw new NotFoundException($"User with Guid {userGuid} not found!");
+                throw new NotFoundException($"User with Guid {userId} not found!");
             }
 
             if (user.Email != model.Email)

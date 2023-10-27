@@ -148,7 +148,6 @@ namespace ASPDotNetWebAPI.Controllers
         public async Task EditUserInfo([FromBody] UserEditRequestDTO model)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
-
             await _userRepository.EditProfileAsync(userId, model);
         }
     }
