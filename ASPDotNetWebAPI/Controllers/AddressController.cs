@@ -24,9 +24,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<List<SearchAddressDTO>> GetAddress([FromQuery] int? parentObjectId, [FromQuery] string? query)
         {
-            var answer = await _addressService.GetChildObjectsAsync(parentObjectId != null ? (int)parentObjectId : 0, query);
-
-            return answer;
+            return await _addressService.GetChildObjectsAsync(parentObjectId != null ? (int)parentObjectId : 0, query);
         }
 
         /// <summary>
@@ -38,18 +36,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<List<SearchAddressDTO>>> GetAddressChain([FromQuery] Guid ObjectGuid)
         {
-            var answer = await _addressService.GetPathFromRootToObjectAsync(ObjectGuid);
-
-            if (answer.IsNullOrEmpty())
-            {
-                return NotFound(new ResponseDTO()
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Message = $"Not found object with ObjectGuid={ObjectGuid}"
-                });
-            }
-
-            return answer;
+            return await _addressService.GetPathFromRootToObjectAsync(ObjectGuid);
         }
     }
 }

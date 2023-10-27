@@ -1,4 +1,5 @@
-﻿using ASPDotNetWebAPI.Models;
+﻿using ASPDotNetWebAPI.Exceptions;
+using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -58,7 +59,7 @@ namespace ASPDotNetWebAPI.Services
             var ObjectId = await GetObjectIdAsync(ObjectGuid);
             if (ObjectId == null)
             {
-                return new List<SearchAddressDTO>();
+                throw new NotFoundException($"Not found address element with ObjectGuid={ObjectGuid}");
             }
 
             var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
