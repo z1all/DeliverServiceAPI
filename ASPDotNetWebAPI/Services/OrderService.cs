@@ -76,7 +76,7 @@ namespace ASPDotNetWebAPI.Services
             return listOfOrders;
         }
 
-        public async Task CreatOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
+        public async Task CreateOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (user == null)
