@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(authOptions =>
             ValidIssuer = "HITs",
             ValidateAudience = false
         };
-        
+
     });
 
 // Connecting the database
@@ -94,7 +94,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();  
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 

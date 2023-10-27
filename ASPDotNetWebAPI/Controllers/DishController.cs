@@ -13,8 +13,8 @@ namespace ASPDotNetWebAPI.Controllers
     {
         private readonly IDishService _dishService;
 
-        public DishController(IDishService dishService) 
-        { 
+        public DishController(IDishService dishService)
+        {
             _dishService = dishService;
         }
 
