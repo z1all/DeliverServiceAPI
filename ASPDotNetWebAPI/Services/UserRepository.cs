@@ -1,4 +1,5 @@
-﻿using ASPDotNetWebAPI.Helpers;
+﻿using ASPDotNetWebAPI.Exceptions;
+using ASPDotNetWebAPI.Helpers;
 using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,13 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
         {
+            var isNotUnique = await EmailIsUsedAsync(model.Email);
+
+            if (isNotUnique)
+            {
+                throw new ValidationProblemException($"Username '{model.Email}' is already taken.");
+            }
+
             var user = new User()
             {
                 FullName = model.FullName,
@@ -38,17 +46,17 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO model)
+        public async Task<TokenResponseDTO> LoginAsync(LoginRequestDTO model)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
             if (user == null)
             {
-                return null;
+                throw new NotFoundException("Login failed. A user with this username and password was not found!");
             }
 
             if (!BCrypt.Net.BCrypt.Verify(model.Password, user.HashPassword))
             {
-                return null;
+                throw new NotFoundException("Login failed. A user with this username and password was not found!");
             }
 
             return new TokenResponseDTO()
@@ -63,13 +71,13 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<UserResponseDTO?> GetProfileAsync(Guid UserId)
+        public async Task<UserResponseDTO> GetProfileAsync(Guid UserId)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
 
             if (user == null)
             {
-                return null;
+                throw new NotFoundException($"User with Guid {userGuid} not found!");
             }
 
             return new UserResponseDTO()
@@ -84,12 +92,21 @@ namespace ASPDotNetWebAPI.Services
             };
         }
 
-        public async Task<bool> EditProfileAsync(Guid UserId, UserEditRequestDTO model)
+        public async Task EditProfileAsync(Guid UserId, UserEditRequestDTO model)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == UserId);
             if (user == null)
             {
-                return false;
+                throw new NotFoundException($"User with Guid {userGuid} not found!");
+            }
+
+            if (user.Email != model.Email)
+            {
+                var userSameEmail = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
+                if (userSameEmail != null)
+                {
+                    throw new ValidationProblemException($"A user with the same email {model.Email} already exists");
+                }
             }
 
             user.FullName = model.FullName;
@@ -100,11 +117,9 @@ namespace ASPDotNetWebAPI.Services
             user.PhoneNumber = model.PhoneNumber;
 
             await _dbContext.SaveChangesAsync();
-
-            return true;
         }
 
-        public async Task<bool> EmailIsUsedAsync(string email)
+        private async Task<bool> EmailIsUsedAsync(string email)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
 

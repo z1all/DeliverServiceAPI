@@ -40,23 +40,11 @@ namespace ASPDotNetWebAPI.Controllers
         /// </remarks>
         [HttpPost("register")]
         [ProducesResponseType(typeof(TokenResponseDTO), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(HttpValidationProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<TokenResponseDTO>> Register([FromBody] RegistrationRequestDTO model)
+        public async Task<TokenResponseDTO> Register([FromBody] RegistrationRequestDTO model)
         {
-            var isNotUnique = await _userRepository.EmailIsUsedAsync(model.Email);
-            if (isNotUnique)
-            {
-                return BadRequest(new ResponseDTO()
-                {
-                    Status = 400,
-                    Message = $"Username '{model.Email}' is already taken."
-                });
-            }
-
-            var token = await _userRepository.RegisterAsync(model);
-
-            return token;
+            return await _userRepository.RegisterAsync(model);
         }
 
         /// <summary>
@@ -82,21 +70,12 @@ namespace ASPDotNetWebAPI.Controllers
         /// </remarks>
         [HttpPost("login")]
         [ProducesResponseType(typeof(TokenResponseDTO), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(HttpValidationProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginRequestDTO model)
+        public async Task<TokenResponseDTO> Login([FromBody] LoginRequestDTO model)
         {
-            var token = await _userRepository.LoginAsync(model);
-            if (token == null)
-            {
-                return BadRequest(new ResponseDTO()
-                {
-                    Status = 400,
-                    Message = $"Login failed."
-                });
-            }
-
-            return Ok(token);
+            return await _userRepository.LoginAsync(model);
         }
 
         /// <summary>
@@ -108,10 +87,9 @@ namespace ASPDotNetWebAPI.Controllers
         [CustomAuthorize]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ResponseDTO>> Logout()
+        public async Task<ResponseDTO> Logout()
         {
             var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
-
             await _userRepository.LogoutAsync(JTI);
 
             return new ResponseDTO()
@@ -131,21 +109,11 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(UserResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<UserResponseDTO>> GetUserInfo()
+        public async Task<UserResponseDTO> GetUserInfo()
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            var userInfo = await _userRepository.GetProfileAsync(userId);
-            if (userInfo == null)
-            {
-                return NotFound(new ResponseDTO()
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Message = "User not found. Either it doesn't exist, or the token is invalid."
-                });
-            }
-
-            return userInfo;
+            return await _userRepository.GetProfileAsync(userId);
         }
 
         /// <summary>
@@ -169,29 +137,19 @@ namespace ASPDotNetWebAPI.Controllers
         ///         }
         ///     }
         /// </remarks>
-        /// <response code="400">BadRequest</response>
         /// <response code="401">Unauthorized</response>
         /// <response code="403">Forbidden</response>
         [HttpPut("profile")]
         [CustomAuthorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(HttpValidationProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> EditUserInfo([FromBody] UserEditRequestDTO model)
+        public async Task EditUserInfo([FromBody] UserEditRequestDTO model)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            var hasBeenUpdated = await _userRepository.EditProfileAsync(userId, model);
-            if (!hasBeenUpdated)
-            {
-                return NotFound(new ResponseDTO()
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Message = "User not found. Either it doesn't exist, or the token is invalid."
-                });
-            }
-
-            return Ok();
+            await _userRepository.EditProfileAsync(userId, model);
         }
     }
 }
