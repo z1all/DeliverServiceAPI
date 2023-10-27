@@ -66,7 +66,7 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await HandlExceptionAsync(LogLevel.Warning, httpContext, ex, HttpStatusCode.InternalServerError, "Error processing a secure token!");
             }
-            catch(RuntimeBinderException ex)
+            catch (RuntimeBinderException ex)
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
             }
