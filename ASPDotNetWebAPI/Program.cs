@@ -79,8 +79,8 @@ builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Cleaning of logger providers
-//builder.Logging.ClearProviders();
-//builder.Host.UseNLog();
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
 var app = builder.Build();
 
