@@ -6,5 +6,6 @@ namespace ASPDotNetWebAPI.Services
     {
         Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name);
         Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid);
+        Task<RegionTimeZoneDTO> GetRegionTimeZoneAsync(Guid ObjectGuid);
     }
 }

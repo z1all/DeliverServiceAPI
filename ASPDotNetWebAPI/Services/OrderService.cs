@@ -9,10 +9,14 @@ namespace ASPDotNetWebAPI.Services
     public class OrderService : IOrderService
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly IAddressService _addressService;
+        private readonly int AddTimeToUTC;
 
-        public OrderService(ApplicationDbContext dbContext)
+        public OrderService(ApplicationDbContext dbContext, IAddressService addressService, IConfiguration configuration)
         {
             _dbContext = dbContext;
+            _addressService = addressService;
+            AddTimeToUTC = int.Parse(configuration.GetValue<string>("TimeZoneSettings:AddTimeToUTC"));
         }
 
         public async Task<OrderDTO> GetOrderInfoAsync(Guid userId, Guid orderId)
@@ -78,6 +82,14 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task CreateOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
         {
+            var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(orderCreateDTO.AddressId);
+            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
+
+            if (orderCreateDTO.DeliveryTime < nowTime)
+            {
+                throw new BadRequestException($"The time in the region {nowTime} of the order must be less than the delivery time {orderCreateDTO.DeliveryTime} of the order!");
+            }
+
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (user == null)
             {
@@ -97,7 +109,7 @@ namespace ASPDotNetWebAPI.Services
             var order = await _dbContext.Orders.AddAsync(new Order()
             {
                 DeliveryTime = orderCreateDTO.DeliveryTime,
-                OrderTime = DateTime.Now.ToUniversalTime(),
+                OrderTime = nowTime,
                 AddressId = orderCreateDTO.AddressId,
                 Status = Status.InProcess,
                 User = user
@@ -130,11 +142,18 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"A user with Guid {userId} does not have an order with Guid {orderId}");
             }
 
+            var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(order.AddressId);
+            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
+
+            if (order.DeliveryTime >= nowTime)
+            {
+                throw new BadRequestException($"It is not possible to confirm an order that has not yet been delivered! " +
+                    $"The time of the delivery region is {order.DeliveryTime}. The current time in the region is {nowTime}.");
+            }
+
             order.Status = Status.Delivered;
 
             await _dbContext.SaveChangesAsync();
         }
     }
 }
-
-// Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySWQiOiIxOTAyYjQ3MS03ZTExLTRhNWYtOGVkZS0xYWRiODExYjRmMWIiLCJKVEkiOiJjMWJiNTI0Mi0zMzRkLTRiZDctYjAwYi0yZDQzYzFmYWIwNzYiLCJuYmYiOjE2OTg0ODE0MDUsImV4cCI6MTY5ODQ4NTAwNSwiaWF0IjoxNjk4NDgxNDA1LCJpc3MiOiJISVRzIn0.zn9-l2kpUVDMDAo2pWLG8h8i6ayEqDtkvTeJkFPjEC0
