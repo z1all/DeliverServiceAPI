@@ -10,13 +10,13 @@ namespace ASPDotNetWebAPI.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IAddressService _addressService;
-        private readonly int TimeUTC;
+        private readonly int AddTimeToUTC;
 
         public OrderService(ApplicationDbContext dbContext, IAddressService addressService, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _addressService = addressService;
-            TimeUTC = int.Parse(configuration.GetValue<string>("TimeZoneSettings:TimeUTC"));
+            AddTimeToUTC = int.Parse(configuration.GetValue<string>("TimeZoneSettings:AddTimeToUTC"));
         }
 
         public async Task<OrderDTO> GetOrderInfoAsync(Guid userId, Guid orderId)
@@ -83,7 +83,7 @@ namespace ASPDotNetWebAPI.Services
         public async Task CreateOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
         {
             var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(orderCreateDTO.AddressId);
-            var nowTime = DateTime.UtcNow.AddHours(TimeUTC + regionTimeZone.TimeDifferenceWithMoscow);
+            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
 
             if (orderCreateDTO.DeliveryTime < nowTime)
             {
@@ -140,6 +140,15 @@ namespace ASPDotNetWebAPI.Services
             if (order == null)
             {
                 throw new NotFoundException($"A user with Guid {userId} does not have an order with Guid {orderId}");
+            }
+
+            var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(order.AddressId);
+            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
+
+            if (order.DeliveryTime >= nowTime)
+            {
+                throw new BadRequestException($"It is not possible to confirm an order that has not yet been delivered! " +
+                    $"The time of the delivery region is {order.DeliveryTime}. The current time in the region is {nowTime}.");
             }
 
             order.Status = Status.Delivered;
