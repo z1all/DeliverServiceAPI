@@ -1,6 +1,5 @@
 ﻿using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
-using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace ASPDotNetWebAPI.Services
@@ -8,22 +7,29 @@ namespace ASPDotNetWebAPI.Services
     public class AddressService : IAddressService
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly int skipAddress;
+        private readonly int skipHouses;
 
-        public AddressService(ApplicationDbContext dbContext)
+        public AddressService(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
+            skipAddress = configuration.GetValue<int>("GlobalConstant:SkipAddress");
+            skipHouses = configuration.GetValue<int>("GlobalConstant:SkipHouse");
         }
-        
+
         public async Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name)
         {
+            string nameElement = name != null ? name.ToLower() : string.Empty;
+
             var addressElement = await
                 _dbContext.Hierarchys
                 .Join(_dbContext.AddressElements,
                     fromParentTo => fromParentTo.Objectid,
                     child => child.Objectid,
                     (fromParentTo, child) => new { fromParentTo, child })
-                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
-                .Select(x => new SearchAddressDTO(x.child)).Take(15).ToListAsync();
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId && (x.child.Typename + x.child.Name).ToLower().Contains(nameElement))
+                .Take(skipAddress)
+                .Select(x => new SearchAddressDTO(x.child)).ToListAsync();
 
             var houses = await
                 _dbContext.Hierarchys
@@ -31,61 +37,47 @@ namespace ASPDotNetWebAPI.Services
                     fromParentTo => fromParentTo.Objectid,
                     child => child.Objectid,
                     (fromParentTo, child) => new { fromParentTo, child })
-                .Where(x => x.fromParentTo.Parentobjid == parentObjectId)
-                .Select(x => new SearchAddressDTO(x.child, GetFullName(x.child))).Take(15).ToListAsync();
+                .Where(x => x.fromParentTo.Parentobjid == parentObjectId && x.child.FullName.ToLower().Contains(nameElement))
+                .Take(skipHouses)
+                .Select(x => new SearchAddressDTO(x.child)).ToListAsync();
 
-            var elements = addressElement.Concat(houses).ToList();
-
-            if(name == null)
-            { 
-                return elements;
-            }
-
-            var answer = new List<SearchAddressDTO>();
-            foreach (var element in elements)
-            {
-                if (element.Text.Contains(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    answer.Add(element);
-                }
-            }
-
-            return answer;
+            return addressElement.Concat(houses).ToList();
         }
 
         public async Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid)
         {
-            var ObjectId = await GetObjectIdAsync(ObjectGuid);
-            if (ObjectId == null)
+            var elementInfo = await GetObjectIdAsync(ObjectGuid);
+            if (elementInfo.Item1 == null)
             {
                 return new List<SearchAddressDTO>();
             }
 
-            var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
+            var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == elementInfo.Item1);
 
             var path = hierarchys.Path.Split(".");
-            var addressElementsPath = _dbContext.AddressElements.Where(addressElements => path.Contains(addressElements.Objectid.ToString()));
+            var addressElementsPath = await _dbContext.AddressElements
+                .Where(addressElements => path.Contains(addressElements.Objectid.ToString()))
+                .ToListAsync();
 
             var addressElementsPathOrded = new List<SearchAddressDTO>();
             foreach (var objectId in path)
             {
-                var element = await addressElementsPath.FirstOrDefaultAsync(addressElement => addressElement.Objectid == int.Parse(objectId));
+                var element = addressElementsPath.FirstOrDefault(addressElement => addressElement.Objectid == int.Parse(objectId));
                 if (element != null)
                 {
                     addressElementsPathOrded.Add(new SearchAddressDTO(element));
                 }
             }
 
-            if (path.Length != addressElementsPathOrded.Count)
+            if (elementInfo.Item2 != null)
             {
-                var house = await _dbContext.Houses.FirstAsync(house => house.Objectid == ObjectId);
-                addressElementsPathOrded.Add(new SearchAddressDTO(house, GetFullName(house)));
+                addressElementsPathOrded.Add(new SearchAddressDTO(elementInfo.Item2));
             }
 
             return addressElementsPathOrded;
         }
 
-        private async Task<int?> GetObjectIdAsync(Guid ObjectGuid)
+        private async Task<Tuple<int?, House?>> GetObjectIdAsync(Guid ObjectGuid)
         {
             var addressElement = await _dbContext.AddressElements.FirstOrDefaultAsync(addressElement => addressElement.Objectguid == ObjectGuid);
             if (addressElement == null)
@@ -93,39 +85,15 @@ namespace ASPDotNetWebAPI.Services
                 var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == ObjectGuid);
                 if (house != null)
                 {
-                    return house.Objectid;
+                    return new Tuple<int?, House?>(house.Objectid, house);
                 }
 
-                return null;
+                return new Tuple<int?, House?>(null, null);
             }
             else
             {
-                return addressElement.Objectid;
+                return new Tuple<int?, House?>(addressElement.Objectid, null);
             }
-        }
-
-        private static string GetFullName(House house)
-        {
-            string name = "";
-
-            if (house.Housenum != null)
-            {
-                name += house.Housenum;
-            }
-
-            if (house.Addnum1 != null)
-            {
-                if (house.Housetype != null)
-                {
-                    name += " " + ((HouseType)house.Housetype).GetDescription() + " " + house.Addnum1;
-                }
-                else if (house.Housenum == null)
-                {
-                    name += house.Addnum1;
-                }
-            }
-
-            return name;
         }
     }
 }
