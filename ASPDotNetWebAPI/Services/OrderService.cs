@@ -62,7 +62,7 @@ namespace ASPDotNetWebAPI.Services
             }
 
             var listOfOrders = await _dbContext.Orders
-                .Where(order => order.Id == userId)
+                .Where(order => order.UserId == userId)
                 .Select(order => new OrderInfoDTO()
                 {
                     Id = order.Id,
@@ -76,7 +76,7 @@ namespace ASPDotNetWebAPI.Services
             return listOfOrders;
         }
 
-        public async Task CreatOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
+        public async Task CreateOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (user == null)
@@ -85,6 +85,7 @@ namespace ASPDotNetWebAPI.Services
             }
 
             var dishInCart = _dbContext.DishInCarts
+                .Include(dishBasket => dishBasket.Dish)
                 .Where(dishBasket => dishBasket.UserId == userId && dishBasket.OrderId == null);
 
             var countDishInCart = await dishInCart.CountAsync();
@@ -96,7 +97,7 @@ namespace ASPDotNetWebAPI.Services
             var order = await _dbContext.Orders.AddAsync(new Order()
             {
                 DeliveryTime = orderCreateDTO.DeliveryTime,
-                OrderTime = DateTime.Now,
+                OrderTime = DateTime.Now.ToUniversalTime(),
                 AddressId = orderCreateDTO.AddressId,
                 Status = Status.InProcess,
                 User = user
@@ -106,7 +107,7 @@ namespace ASPDotNetWebAPI.Services
             foreach (var dishBasket in dishInCart)
             {
                 dishBasket.Order = order.Entity;
-                totalPrice = dishBasket.Dish.Price * dishBasket.Count;
+                totalPrice += dishBasket.Dish.Price * dishBasket.Count;
             }
             order.Entity.Price = totalPrice;
 
@@ -135,3 +136,5 @@ namespace ASPDotNetWebAPI.Services
         }
     }
 }
+
+// Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySWQiOiIxOTAyYjQ3MS03ZTExLTRhNWYtOGVkZS0xYWRiODExYjRmMWIiLCJKVEkiOiJjMWJiNTI0Mi0zMzRkLTRiZDctYjAwYi0yZDQzYzFmYWIwNzYiLCJuYmYiOjE2OTg0ODE0MDUsImV4cCI6MTY5ODQ4NTAwNSwiaWF0IjoxNjk4NDgxNDA1LCJpc3MiOiJISVRzIn0.zn9-l2kpUVDMDAo2pWLG8h8i6ayEqDtkvTeJkFPjEC0

@@ -84,6 +84,10 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
             }
+            catch (NullReferenceException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Error, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
+            }
             catch (Exception ex)
             {
                 await HandlExceptionAsync(LogLevel.Critical, httpContext, ex, HttpStatusCode.InternalServerError, "Unknown error!");
