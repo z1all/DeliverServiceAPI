@@ -3,6 +3,7 @@ using System;
 using ASPDotNetWebAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ASPDotNetWebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231028135256_add_new_colum_to_house")]
+    partial class add_new_colum_to_house
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -110,29 +113,23 @@ namespace ASPDotNetWebAPI.Migrations
 
             modelBuilder.Entity("ASPDotNetWebAPI.Models.DishInCart", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DishId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Count")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("DishId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("OrderId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
+                    b.HasKey("UserId", "DishId");
 
                     b.HasIndex("DishId");
 
                     b.HasIndex("OrderId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("DishInCarts");
                 });
@@ -256,27 +253,6 @@ namespace ASPDotNetWebAPI.Migrations
                     b.ToTable("Ratings");
                 });
 
-            modelBuilder.Entity("ASPDotNetWebAPI.Models.RegionTimeZone", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Region")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("RegionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TimeDifferenceWithMoscow")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RegionTimeZones");
-                });
-
             modelBuilder.Entity("ASPDotNetWebAPI.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -315,7 +291,7 @@ namespace ASPDotNetWebAPI.Migrations
             modelBuilder.Entity("ASPDotNetWebAPI.Models.DishInCart", b =>
                 {
                     b.HasOne("ASPDotNetWebAPI.Models.Dish", "Dish")
-                        .WithMany()
+                        .WithMany("DishInCarts")
                         .HasForeignKey("DishId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -325,7 +301,7 @@ namespace ASPDotNetWebAPI.Migrations
                         .HasForeignKey("OrderId");
 
                     b.HasOne("ASPDotNetWebAPI.Models.User", "User")
-                        .WithMany()
+                        .WithMany("DishInCarts")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -369,11 +345,15 @@ namespace ASPDotNetWebAPI.Migrations
 
             modelBuilder.Entity("ASPDotNetWebAPI.Models.Dish", b =>
                 {
+                    b.Navigation("DishInCarts");
+
                     b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("ASPDotNetWebAPI.Models.User", b =>
                 {
+                    b.Navigation("DishInCarts");
+
                     b.Navigation("Orders");
 
                     b.Navigation("Ratings");

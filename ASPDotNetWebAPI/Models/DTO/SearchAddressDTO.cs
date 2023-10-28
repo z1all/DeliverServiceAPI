@@ -11,11 +11,11 @@ namespace ASPDotNetWebAPI.Models.DTO
         public string? ObjectLevelText { get; set; }
 
         public SearchAddressDTO() { }
-        public SearchAddressDTO(House house, string fullName)
+        public SearchAddressDTO(House house)
         {
             ObjectId = house.Objectid;
             ObjectGuid = house.Objectguid;
-            Text = fullName;
+            Text = house.FullName;
             ObjectLevel = GarAddressLevel.Building;
             ObjectLevelText = GarAddressLevel.Building.GetDescription();
         }

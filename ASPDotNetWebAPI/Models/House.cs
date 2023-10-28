@@ -5,6 +5,7 @@
         public int Id { get; set; }
         public int Objectid { get; set; }
         public Guid Objectguid { get; set; }
+        public string FullName { get; set; } = string.Empty;
         public string? Housenum { get; set; }
         public string? Addnum1 { get; set; }
         public string? Addnum2 { get; set; }

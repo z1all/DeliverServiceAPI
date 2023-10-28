@@ -26,9 +26,24 @@ namespace ASPDotNetWebAPI.Services
                 throw new BadRequestException($"Invalid value for attribute page. The page number cannot be less than 1. Your number: {page}.");
             }
 
-            var dishes = await _dbContext.Dishes
-                .Where(dish => (isVegetarian == true ? dish.IsVegetairian : true) && (category.IsNullOrEmpty() ? true : category.Contains(dish.Category))).
-                Select(dish => new DishDTO()
+            var dishesRequest = _dbContext.Dishes
+                .Where(dish => (isVegetarian == true ? dish.IsVegetairian : true) && (category.IsNullOrEmpty() ? true : category.Contains(dish.Category)));
+
+            dishesRequest = SortDishes(dishSorting, dishesRequest);
+
+            var countOfDishOnPageStr = _configuration.GetValue<string>("ApiSettings:CountOfDishOnPage");
+            int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
+            int countOfDishes = await dishesRequest.CountAsync();
+            int countOfPages = (int)Math.Ceiling((double)countOfDishes / countOfDishOnPage);
+
+            if (countOfPages < page)
+            {
+                throw new BadRequestException($"Invalid value for attribute page. The number of pages {countOfPages} is less than the requested page {page}.");
+            }
+
+            var listOfDishes = await dishesRequest
+                .Skip(countOfDishOnPage * (page - 1)).Take(countOfDishOnPage)
+                .Select(dish => new DishDTO()
                 {
                     Id = dish.Id,
                     Name = dish.Name,
@@ -38,28 +53,14 @@ namespace ASPDotNetWebAPI.Services
                     IsVegetairian = dish.IsVegetairian,
                     Rating = dish.Rating,
                     Category = dish.Category
-                })
-                .ToListAsync();
-
-            dishes = SortDishes(dishSorting, dishes);
-
-            var countOfDishOnPageStr = _configuration.GetValue<string>("ApiSettings:CountOfDishOnPage");
-            int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
-            int countOfPages = (int)Math.Ceiling((double)dishes.Count() / countOfDishOnPage);
-
-            if (countOfPages < page)
-            {
-                throw new BadRequestException($"Invalid value for attribute page. The number of pages {countOfPages} is less than the requested page {page}.");
-            }
-
-            dishes = dishes.Skip(countOfDishOnPage * (page - 1)).Take(countOfDishOnPage).ToList();
+                }).ToListAsync();
 
             return new DishPagedListDTO()
             {
-                Dishes = dishes,
+                Dishes = listOfDishes,
                 Pagination = new PageInfoDTO()
                 {
-                    Size = dishes.Count(),
+                    Size = countOfDishes,
                     Count = countOfPages,
                     Current = page,
                 }
@@ -96,8 +97,7 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
-            var dishInCarts = await
-                _dbContext.DishInCarts
+            var dishInCarts = await _dbContext.DishInCarts
                 .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
 
             if (dishInCarts == null)
@@ -169,28 +169,22 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        private List<DishDTO> SortDishes(DishSorting dishSorting, List<DishDTO> dishes)
+        private IQueryable<Dish> SortDishes(DishSorting dishSorting, IQueryable<Dish> dishes)
         {
             switch (dishSorting)
             {
                 case DishSorting.NameAsc:
-                    dishes = dishes.OrderBy(dish => dish.Name).ToList();
-                    break;
+                    return dishes.OrderBy(dish => dish.Name);
                 case DishSorting.NameDesc:
-                    dishes = dishes.OrderByDescending(dish => dish.Name).ToList();
-                    break;
+                    return dishes.OrderByDescending(dish => dish.Name);
                 case DishSorting.PriceAsc:
-                    dishes = dishes.OrderBy(dish => dish.Price).ToList();
-                    break;
+                    return dishes.OrderBy(dish => dish.Price);
                 case DishSorting.PriceDesc:
-                    dishes = dishes.OrderByDescending(dish => dish.Price).ToList();
-                    break;
+                    return dishes.OrderByDescending(dish => dish.Price);
                 case DishSorting.RatingAsc:
-                    dishes = dishes.OrderBy(dish => dish.Rating).ToList();
-                    break;
+                    return dishes.OrderBy(dish => dish.Rating);
                 case DishSorting.RatingDesc:
-                    dishes = dishes.OrderByDescending(dish => dish.Rating).ToList();
-                    break;
+                    return dishes.OrderByDescending(dish => dish.Rating);
             }
 
             return dishes;
