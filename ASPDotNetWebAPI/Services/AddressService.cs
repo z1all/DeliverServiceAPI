@@ -62,9 +62,7 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Not found address element with ObjectGuid={ObjectGuid}");
             }
 
-            var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
-
-            var path = hierarchys.Path.Split(".");
+            var path = await GetPathAsArrayAsync((int)ObjectId);
             var addressElementsPath = _dbContext.AddressElements.Where(addressElements => path.Contains(addressElements.Objectid.ToString()));
 
             var addressElementsPathOrded = new List<SearchAddressDTO>();
@@ -86,6 +84,31 @@ namespace ASPDotNetWebAPI.Services
             return addressElementsPathOrded;
         }
 
+        public async Task<RegionTimeZoneDTO> GetRegionTimeZoneAsync(Guid ObjectGuid)
+        {
+            var ObjectId = await GetObjectIdAsync(ObjectGuid);
+            if (ObjectId == null)
+            {
+                throw new NotFoundException($"Not found address element with ObjectGuid={ObjectGuid}");
+            }
+
+            var path = await GetPathAsArrayAsync((int)ObjectId);
+            var regionId = int.Parse(path[0]);
+
+            var region = await _dbContext.RegionTimeZones
+                .FirstOrDefaultAsync(regionTimeZone => regionTimeZone.RegionId == regionId);
+            if (region == null)
+            {
+                throw new NotFoundException($"Region with ObjectGuid={ObjectGuid} not found!");
+            }
+
+            return new RegionTimeZoneDTO()
+            {
+                Region = region.Region,
+                TimeDifferenceWithMoscow = region.TimeDifferenceWithMoscow
+            };
+        }
+
         private async Task<int?> GetObjectIdAsync(Guid ObjectGuid)
         {
             var addressElement = await _dbContext.AddressElements.FirstOrDefaultAsync(addressElement => addressElement.Objectguid == ObjectGuid);
@@ -103,6 +126,13 @@ namespace ASPDotNetWebAPI.Services
             {
                 return addressElement.Objectid;
             }
+        }
+
+        private async Task<string[]> GetPathAsArrayAsync(int ObjectId)
+        {
+            var hierarchys = await _dbContext.Hierarchys.FirstAsync(hierarchys => hierarchys.Objectid == ObjectId);
+
+            return hierarchys.Path.Split(".");
         }
 
         private static string GetFullName(House house)
