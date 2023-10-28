@@ -1,6 +1,7 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
 using ASPDotNetWebAPI.Helpers;
 using ASPDotNetWebAPI.Models.DTO;
+using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ASPDotNetWebAPI.Controllers
@@ -9,13 +10,20 @@ namespace ASPDotNetWebAPI.Controllers
     [ApiController]
     public class OrderController : ControllerBase
     {
+        private readonly IOrderService _orderService;
+
+        public OrderController(IOrderService orderService)
+        {
+            _orderService = orderService;
+        }
+
         [HttpGet("{id}")]
         [CustomAuthorize]
         public async Task<OrderDTO> GetOrderInfo(Guid id)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            throw new NotImplementedException();
+            return await _orderService.GetOrderInfoAsync(userId, id);
         }
 
         [HttpGet]
@@ -24,25 +32,23 @@ namespace ASPDotNetWebAPI.Controllers
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
-            throw new NotImplementedException();
+            return await _orderService.GetOrderInfoListAsync(userId);
         }
 
         [HttpPost]
         [CustomAuthorize]
-        public async Task CreatOrderFromBasket()
+        public async Task CreatOrderFromBasket([FromBody]OrderCreateDTO orderCreateDTO)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
-
-            throw new NotImplementedException();
+            await _orderService.CreateOrderFormBasketAsync(userId, orderCreateDTO);
         }
 
         [HttpPost("{id}/status")]
         [CustomAuthorize]
-        public async Task CreateOrderFromBasket(Guid id)
+        public async Task ConfirmOrderDelivery(Guid id)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
-
-            throw new NotImplementedException();
+            await _orderService.ConfirmOrderDeliveryAsync(userId, id);
         }
     }
 }
