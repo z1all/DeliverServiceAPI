@@ -16,7 +16,7 @@ namespace ASPDotNetWebAPI.Services
         {
             _dbContext = dbContext;
             _addressService = addressService;
-            AddTimeToUTC = int.Parse(configuration.GetValue<string>("TimeZoneSettings:AddTimeToUTC"));
+            AddTimeToUTC = configuration.GetValue<int>("TimeZoneSettings:AddTimeToUTC");
         }
 
         public async Task<OrderDTO> GetOrderInfoAsync(Guid userId, Guid orderId)

@@ -7,7 +7,6 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<Dish> Dishes { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<User> Users { get; set; }
-        // public DbSet<DishBasket> DishBaskets { get; set; }
         public DbSet<DishInCart> DishInCarts { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<House> Houses { get; set; }
@@ -26,12 +25,12 @@ namespace ASPDotNetWebAPI.Models
             // Adding restrictions for the Rating link
             modelBuilder.Entity<Rating>()
                 .HasOne(rating => rating.Dish)
-                .WithMany(dish => dish.Ratings)
+                .WithMany(/*dish => dish.Ratings*/)
                 .HasForeignKey(rating => rating.DishId)
                 .IsRequired();
             modelBuilder.Entity<Rating>()
                 .HasOne(rating => rating.User)
-                .WithMany(user => user.Ratings)
+                .WithMany(/*user => user.Ratings*/)
                 .HasForeignKey(rating => rating.UserId)
                 .IsRequired();
             modelBuilder.Entity<Rating>()
@@ -40,12 +39,12 @@ namespace ASPDotNetWebAPI.Models
             // Adding restrictions for the DishInCart link
             modelBuilder.Entity<DishInCart>()
                 .HasOne(dishInCart => dishInCart.Dish)
-                .WithMany(/*dish => dish.DishInCarts*/)
+                .WithMany()
                 .HasForeignKey(dishInCart => dishInCart.DishId)
                 .IsRequired();
             modelBuilder.Entity<DishInCart>()
                 .HasOne(dishInCart => dishInCart.User)
-                .WithMany(/*user => user.DishInCarts*/)
+                .WithMany()
                 .HasForeignKey(dishInCart => dishInCart.UserId)
                 .IsRequired();
             modelBuilder.Entity<DishInCart>()
@@ -54,7 +53,7 @@ namespace ASPDotNetWebAPI.Models
             // Adding restrictions for the Order link
             modelBuilder.Entity<Order>()
                 .HasOne(order => order.User)
-                .WithMany(user => user.Orders)
+                .WithMany(/*user => user.Orders*/)
                 .HasForeignKey(order => order.UserId)
                 .IsRequired();
         }

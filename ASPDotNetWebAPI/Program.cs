@@ -48,7 +48,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configuring Authentication
-var key = builder.Configuration.GetValue<string>("ApiSettings:Secret");
+var key = builder.Configuration.GetValue<string>("JWTTokenSettings:Secret");
 builder.Services.AddAuthentication(authOptions =>
 {
     authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

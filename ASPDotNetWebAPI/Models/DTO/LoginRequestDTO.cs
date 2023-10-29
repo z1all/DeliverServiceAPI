@@ -7,7 +7,7 @@ namespace ASPDotNetWebAPI.Models.DTO
         [Required]
         [MinLength(1)]
         [EmailAddress]
-        public string Email {  get; set; }
+        public string Email { get; set; }
         [Required]
         [MinLength(1)]
         public string Password { get; set; }

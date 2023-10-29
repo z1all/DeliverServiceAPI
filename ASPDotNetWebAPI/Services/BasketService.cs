@@ -26,7 +26,8 @@ namespace ASPDotNetWebAPI.Services
                     TotalPrice = dishInCart.Dish.Price * dishInCart.Count,
                     Amount = dishInCart.Count,
                     Image = dishInCart.Dish.Image
-                }).ToListAsync();
+                })
+                .ToListAsync();
 
             return listOfDish;
         }

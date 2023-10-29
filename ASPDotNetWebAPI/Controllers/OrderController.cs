@@ -62,7 +62,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task CreatOrderFromBasket([FromBody]OrderCreateDTO orderCreateDTO)
+        public async Task CreatOrderFromBasket([FromBody] OrderCreateDTO orderCreateDTO)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
             await _orderService.CreateOrderFormBasketAsync(userId, orderCreateDTO);

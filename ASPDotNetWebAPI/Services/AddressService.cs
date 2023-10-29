@@ -30,7 +30,8 @@ namespace ASPDotNetWebAPI.Services
                     (fromParentTo, child) => new { fromParentTo, child })
                 .Where(x => x.fromParentTo.Parentobjid == parentObjectId && (x.child.Typename + x.child.Name).ToLower().Contains(nameElement))
                 .Take(skipAddress)
-                .Select(x => new SearchAddressDTO(x.child)).ToListAsync();
+                .Select(x => new SearchAddressDTO(x.child))
+                .ToListAsync();
 
             var houses = await
                 _dbContext.Hierarchys
@@ -40,7 +41,8 @@ namespace ASPDotNetWebAPI.Services
                     (fromParentTo, child) => new { fromParentTo, child })
                 .Where(x => x.fromParentTo.Parentobjid == parentObjectId && x.child.FullName.ToLower().Contains(nameElement))
                 .Take(skipHouses)
-                .Select(x => new SearchAddressDTO(x.child)).ToListAsync();
+                .Select(x => new SearchAddressDTO(x.child))
+                .ToListAsync();
 
             return addressElement.Concat(houses).ToList();
         }

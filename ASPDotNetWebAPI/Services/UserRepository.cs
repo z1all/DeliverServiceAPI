@@ -10,11 +10,13 @@ namespace ASPDotNetWebAPI.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private string? secretKey;
+        private int saltNum;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
-            secretKey = configuration.GetValue<string>("ApiSettings:Secret");
+            secretKey = configuration.GetValue<string>("JWTTokenSettings:Secret");
+            saltNum = configuration.GetValue<int>("PasswordHashSettings:SaltNum");
         }
 
         public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
@@ -29,7 +31,7 @@ namespace ASPDotNetWebAPI.Services
             var user = new User()
             {
                 FullName = model.FullName,
-                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(12)),
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(saltNum)),
                 BirthDate = model.BirthDate,
                 Gender = model.Gender,
                 PhoneNumber = model.PhoneNumber,

@@ -1,7 +1,7 @@
 ﻿using ASPDotNetWebAPI.Models.Enums;
 
 namespace ASPDotNetWebAPI.Models
-{  
+{
     public class Order
     {
         public Guid Id { get; set; }

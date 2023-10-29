@@ -13,7 +13,6 @@ namespace ASPDotNetWebAPI.Models
         public decimal? Rating { get; set; }
         public DishCategory Category { get; set; }
 
-        public ICollection<Rating> Ratings { get; set; }
-        // public ICollection<DishInCart> DishInCarts { get; set; }
+        // public ICollection<Rating> Ratings { get; set; }
     }
 }

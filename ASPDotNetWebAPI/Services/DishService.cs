@@ -4,7 +4,6 @@ using ASPDotNetWebAPI.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ASPDotNetWebAPI.Exceptions;
-using ASPDotNetWebAPI.Helpers;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -31,7 +30,7 @@ namespace ASPDotNetWebAPI.Services
 
             dishesRequest = SortDishes(dishSorting, dishesRequest);
 
-            var countOfDishOnPageStr = _configuration.GetValue<string>("ApiSettings:CountOfDishOnPage");
+            var countOfDishOnPageStr = _configuration.GetValue<string>("GlobalConstant:CountOfDishOnPage");
             int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
             int countOfDishes = await dishesRequest.CountAsync();
             int countOfPages = (int)Math.Ceiling((double)countOfDishes / countOfDishOnPage);
@@ -53,7 +52,8 @@ namespace ASPDotNetWebAPI.Services
                     IsVegetairian = dish.IsVegetairian,
                     Rating = dish.Rating,
                     Category = dish.Category
-                }).ToListAsync();
+                })
+                .ToListAsync();
 
             return new DishPagedListDTO()
             {
@@ -97,15 +97,7 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
-            var dishInCarts = await _dbContext.DishInCarts
-                .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
-
-            if (dishInCarts == null)
-            {
-                return false;
-            }
-
-            return true;
+            return await CheckToSetRatingWithoutCheckDishAsync(dishId, userId);
         }
 
         public async Task<DishDTO> SetRatingAsync(Guid dishId, Guid userId, int ratingScore)
@@ -116,9 +108,13 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"Dish with Guid {dishId} not found.");
             }
 
-            var user = await _dbContext.Users.FirstAsync(user => user.Id == userId);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
+            if (user == null)
+            {
+                throw new NotFoundException($"User with Guid {userId} not found.");
+            }
 
-            if (!await CheckToSetRatingAsync(dishId, userId))
+            if (!await CheckToSetRatingWithoutCheckDishAsync(dishId, userId))
             {
                 throw new BadRequestException($"You can't rate a dish with an Guid {dishId}. To do this, you need to buy this dish.");
             }
@@ -153,6 +149,19 @@ namespace ASPDotNetWebAPI.Services
                 Rating = dish.Rating,
                 Category = dish.Category
             };
+        }
+
+        private async Task<bool> CheckToSetRatingWithoutCheckDishAsync(Guid dishId, Guid userId)
+        {
+            var dishInCarts = await _dbContext.DishInCarts
+                .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
+
+            if (dishInCarts == null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private async Task UpdateRatingAsync(Guid dishId)
