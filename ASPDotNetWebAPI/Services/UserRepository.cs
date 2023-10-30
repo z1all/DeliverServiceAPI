@@ -17,7 +17,7 @@ namespace ASPDotNetWebAPI.Services
         {
             _dbContext = dbContext;
             _configuration = configuration;
-            
+
             refreshTokenTimeLifeDay = configuration.GetValue<int>("JWTTokenSettings:RefreshTokenLifeTimeDay");
             saltNum = configuration.GetValue<int>("PasswordHashSettings:SaltNum");
         }
@@ -41,19 +41,9 @@ namespace ASPDotNetWebAPI.Services
                 Email = model.Email,
                 AddressId = model.AddressId
             };
-            await _dbContext.Users.AddAsync(user);
 
-            var tokens = new TokenResponseDTO()
-            {
-                Token = JWTTokenHelper.GeneratJWTToken(user, _configuration),
-                RefreshToken = JWTTokenHelper.GenerateRefreshToken()
-            };
-            await _dbContext.RefreshTokens.AddAsync(new RefreshTokens()
-            {
-                RefreshToken = tokens.RefreshToken,
-                User = user,
-                Expires = DateTime.UtcNow.AddDays(refreshTokenTimeLifeDay)
-            });
+            await _dbContext.Users.AddAsync(user);
+            var tokens = await GetTokensAndAddToDb(user);
 
             await _dbContext.SaveChangesAsync();
 
@@ -73,23 +63,49 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException("Login failed. A user with this username and password was not found!");
             }
 
-            return new TokenResponseDTO()
-            {
-                Token = JWTTokenHelper.GeneratJWTToken(user, _configuration)
-            };
+            var tokens = await GetTokensAndAddToDb(user);
+            await _dbContext.SaveChangesAsync();
+
+            return tokens;
         }
 
-        public async Task LogoutAllAsync(Guid JTI)
+        private async Task<TokenResponseDTO> GetTokensAndAddToDb (User user)
         {
-            throw new NotImplementedException();
+            var tokens = new TokenResponseDTO()
+            {
+                AccessToken = JWTTokenHelper.GeneratJWTToken(user, _configuration),
+                RefreshToken = JWTTokenHelper.GenerateRefreshToken()
+            };
+            await _dbContext.RefreshTokens.AddAsync(new RefreshTokens()
+            {
+                RefreshToken = tokens.RefreshToken,
+                AccessTokenJTI = Guid.Parse(JWTTokenHelper.GetValueFromToken(tokens.AccessToken, "JTI")),
+                User = user,
+                Expires = DateTime.UtcNow.AddDays(refreshTokenTimeLifeDay)
+            });
 
-            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.ToString() });
+            return tokens;
+        }
+
+        public async Task LogoutAllAsync(Guid userId)
+        {
+            var usersRefreshTokens = await _dbContext.RefreshTokens.Where(refreshToken => refreshToken.UserId == userId).ToListAsync();
+            _dbContext.RefreshTokens.RemoveRange(usersRefreshTokens);
+
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task LogoutCurrentAsync(Guid JTI, TokenLogoutDTO refreshToken)
+        public async Task LogoutCurrentAsync(Guid userId, TokenLogoutDTO refreshToken)
         {
-            throw new NotImplementedException();
+            var usersRefreshTokens = await _dbContext.RefreshTokens.FirstOrDefaultAsync(token => token.RefreshToken == refreshToken.RefreshToken);
+            if (usersRefreshTokens == null)
+            {
+                throw new NotFoundException("Refresh token not found!");
+            }
+
+            _dbContext.RefreshTokens.Remove(usersRefreshTokens);
+
+            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<TokenResponseDTO> Refresh(RefreshDTO refreshDTO)

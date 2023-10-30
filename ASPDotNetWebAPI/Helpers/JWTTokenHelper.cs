@@ -43,11 +43,22 @@ namespace ASPDotNetWebAPI.Helpers
             return Convert.ToBase64String(randomNumber);
         }
 
-        public static string GetValueFromToken(HttpContext httpContext, string type)
+        public static string? GetValueFromToken(string token, string type)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+
+            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == type);
+
+            return (userGuidStr != null) ? userGuidStr.Value : null;
+        }
+
+
+        public static string? GetValueFromToken(HttpContext httpContext, string type)
         {
             var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == type);
 
-            return userGuidStr.Value;
+            return (userGuidStr != null) ? userGuidStr.Value : null;
         }
 
         public static Guid GetUserIdFromToken(HttpContext httpContext)

@@ -13,7 +13,6 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<Hierarchy> Hierarchys { get; set; }
         public DbSet<AddressElement> AddressElements { get; set; }
         public DbSet<RegionTimeZone> RegionTimeZones { get; set; }
-        public DbSet<DeletedTokens> DeletedTokens { get; set; }
         public DbSet<RefreshTokens> RefreshTokens { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)

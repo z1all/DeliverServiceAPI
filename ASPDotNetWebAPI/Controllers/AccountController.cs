@@ -1,5 +1,6 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
 using ASPDotNetWebAPI.Helpers;
+using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -89,25 +90,22 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
         public async Task<ResponseDTO> LogoutAll()
         {
-            throw new NotImplementedException();
-
-            var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
-            //await _userRepository.LogoutAsync(JTI);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
+            await _userRepository.LogoutAllAsync(userId);
 
             return new ResponseDTO()
             {
                 Status = null,
-                Message = "Logged out."
+                Message = "All sessions are completed."
             };
         }
 
         [HttpPost("logoutcurrent")]
         [CustomAuthorize]
-        public async Task<ResponseDTO> LogoutCurrent([FromBody]string refreshToken)
+        public async Task<ResponseDTO> LogoutCurrent([FromBody]TokenLogoutDTO refreshToken)
         {
-            throw new NotImplementedException();
-
-            var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
+            await _userRepository.LogoutCurrentAsync(userId, refreshToken);
 
             return new ResponseDTO()
             {
