@@ -9,13 +9,16 @@ namespace ASPDotNetWebAPI.Services
     public class UserRepository : IUserRepository
     {
         private readonly ApplicationDbContext _dbContext;
-        private string? secretKey;
+        private readonly IConfiguration _configuration;
         private int saltNum;
+        private int refreshTokenTimeLifeDay;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
-            secretKey = configuration.GetValue<string>("JWTTokenSettings:Secret");
+            _configuration = configuration;
+            
+            refreshTokenTimeLifeDay = configuration.GetValue<int>("JWTTokenSettings:RefreshTokenLifeTimeDay");
             saltNum = configuration.GetValue<int>("PasswordHashSettings:SaltNum");
         }
 
@@ -38,14 +41,23 @@ namespace ASPDotNetWebAPI.Services
                 Email = model.Email,
                 AddressId = model.AddressId
             };
-
             await _dbContext.Users.AddAsync(user);
+
+            var tokens = new TokenResponseDTO()
+            {
+                Token = JWTTokenHelper.GeneratJWTToken(user, _configuration),
+                RefreshToken = JWTTokenHelper.GenerateRefreshToken()
+            };
+            await _dbContext.RefreshTokens.AddAsync(new RefreshTokens()
+            {
+                RefreshToken = tokens.RefreshToken,
+                User = user,
+                Expires = DateTime.UtcNow.AddDays(refreshTokenTimeLifeDay)
+            });
+
             await _dbContext.SaveChangesAsync();
 
-            return new TokenResponseDTO()
-            {
-                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
-            };
+            return tokens;
         }
 
         public async Task<TokenResponseDTO> LoginAsync(LoginRequestDTO model)
@@ -63,14 +75,26 @@ namespace ASPDotNetWebAPI.Services
 
             return new TokenResponseDTO()
             {
-                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
+                Token = JWTTokenHelper.GeneratJWTToken(user, _configuration)
             };
         }
 
-        public async Task LogoutAsync(Guid JTI)
+        public async Task LogoutAllAsync(Guid JTI)
         {
+            throw new NotImplementedException();
+
             await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.ToString() });
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task LogoutCurrentAsync(Guid JTI, TokenLogoutDTO refreshToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<TokenResponseDTO> Refresh(RefreshDTO refreshDTO)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<UserResponseDTO> GetProfileAsync(Guid userId)

@@ -2,14 +2,17 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ASPDotNetWebAPI.Helpers
 {
     public static class JWTTokenHelper
     {
-        public static string GeneratJWTToken(User user, string secretKey)
+        public static string GeneratJWTToken(User user, IConfiguration configuration)
         {
+            var secretKey = configuration.GetValue<string>("JWTTokenSettings:Secret");
+
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secretKey);
 
@@ -20,13 +23,24 @@ namespace ASPDotNetWebAPI.Helpers
                     new Claim("UserId", user.Id.ToString()),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
-                Expires = DateTime.UtcNow.AddHours(1),
+                Expires = DateTime.UtcNow.AddMinutes(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
                 Issuer = "HITs"
             };
 
             var token = tokenHandler.CreateToken(tokenDescription);
             return tokenHandler.WriteToken(token);
+        }
+
+        public static string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+
+            using var generator = RandomNumberGenerator.Create();
+
+            generator.GetBytes(randomNumber);
+
+            return Convert.ToBase64String(randomNumber);
         }
 
         public static string GetValueFromToken(HttpContext httpContext, string type)
