@@ -79,7 +79,7 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.RefreshTokens.AddAsync(new RefreshTokens()
             {
                 RefreshToken = tokens.RefreshToken,
-                AccessTokenJTI = Guid.Parse(JWTTokenHelper.GetValueFromToken(tokens.AccessToken, "JTI")),
+                AccessTokenJTI = JWTTokenHelper.GetJTIFromToken(tokens.AccessToken),
                 User = user,
                 Expires = DateTime.UtcNow.AddDays(refreshTokenTimeLifeDay)
             });
@@ -108,9 +108,38 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<TokenResponseDTO> Refresh(RefreshDTO refreshDTO)
+        public async Task<TokenResponseDTO> RefreshAsync(RefreshDTO refreshDTO)
         {
-            throw new NotImplementedException();
+            if (!JWTTokenHelper.ValidateToken(refreshDTO.AccessToken, _configuration))
+            {
+                throw new UnauthorizedException("Access token failed validation!");
+            }
+
+            var userId = JWTTokenHelper.GetUserIdFromToken(refreshDTO.AccessToken);
+
+            var tokensFromDb = await _dbContext.RefreshTokens
+                .FirstOrDefaultAsync(refreshTokens => refreshTokens.RefreshToken == refreshDTO.RefreshToken);
+            if (tokensFromDb == null || tokensFromDb.UserId != userId || tokensFromDb.Expires < DateTime.UtcNow)
+            {
+                throw new UnauthorizedException("The Refresh token was not found, or is not associated with the Access token, or its lifetime has expired!");
+            }
+
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
+            if (user == null)
+            {
+                throw new NotFoundException($"User with Guid {userId} not found!");
+            }
+
+            var tokens = new TokenResponseDTO()
+            {
+                RefreshToken = refreshDTO.RefreshToken,
+                AccessToken = JWTTokenHelper.GeneratJWTToken(user, _configuration)
+            };
+
+            tokensFromDb.AccessTokenJTI = JWTTokenHelper.GetJTIFromToken(tokens.AccessToken);
+            await _dbContext.SaveChangesAsync();
+
+            return tokens;
         }
 
         public async Task<UserResponseDTO> GetProfileAsync(Guid userId)

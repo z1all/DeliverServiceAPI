@@ -1,4 +1,5 @@
 ﻿using ASPDotNetWebAPI.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -11,10 +12,13 @@ namespace ASPDotNetWebAPI.Helpers
     {
         public static string GeneratJWTToken(User user, IConfiguration configuration)
         {
-            var secretKey = configuration.GetValue<string>("JWTTokenSettings:Secret");
+            var secret = configuration["JWTTokenSettings:Secret"] ?? throw new InvalidOperationException("Secret not configured");
+            var ValidIssuer = configuration["JWTTokenSettings:ValidIssuer"] ?? throw new InvalidOperationException("ValidIssuer not configured");
+            var AccessTokenLifeTimeMinut = configuration["JWTTokenSettings:AccessTokenLifeTimeMinut"]
+                ?? throw new InvalidOperationException("AccessTokenLifeTimeMinut not configured");
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(secretKey);
+            var key = Encoding.ASCII.GetBytes(secret);
 
             var tokenDescription = new SecurityTokenDescriptor()
             {
@@ -23,9 +27,9 @@ namespace ASPDotNetWebAPI.Helpers
                     new Claim("UserId", user.Id.ToString()),
                     new Claim("JTI", Guid.NewGuid().ToString())
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(1),
+                Expires = DateTime.UtcNow.AddMinutes(int.Parse(AccessTokenLifeTimeMinut)),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                Issuer = "HITs"
+                Issuer = ValidIssuer
             };
 
             var token = tokenHandler.CreateToken(tokenDescription);
@@ -53,7 +57,6 @@ namespace ASPDotNetWebAPI.Helpers
             return (userGuidStr != null) ? userGuidStr.Value : null;
         }
 
-
         public static string? GetValueFromToken(HttpContext httpContext, string type)
         {
             var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == type);
@@ -61,9 +64,29 @@ namespace ASPDotNetWebAPI.Helpers
             return (userGuidStr != null) ? userGuidStr.Value : null;
         }
 
+        public static Guid GetUserIdFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+
+            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == "UserId");
+
+            return Guid.Parse(userGuidStr.Value);
+        }
+
         public static Guid GetUserIdFromToken(HttpContext httpContext)
         {
             var userGuidStr = httpContext.User.Claims.First(claim => claim.Type == "UserId");
+
+            return Guid.Parse(userGuidStr.Value);
+        }
+
+        public static Guid GetJTIFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var parsedToken = tokenHandler.ReadJwtToken(token);
+
+            var userGuidStr = parsedToken.Claims.First(claim => claim.Type == "JTI");
 
             return Guid.Parse(userGuidStr.Value);
         }
@@ -78,6 +101,37 @@ namespace ASPDotNetWebAPI.Helpers
         public static string GetTokenFromHeader(HttpContext httpContext)
         {
             return httpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+        }
+
+        public static bool ValidateToken(string token, IConfiguration configuration)
+        {
+            var secret = configuration["JWTTokenSettings:Secret"] ?? throw new InvalidOperationException("Secret not configured");
+              
+            var validation = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)),
+                ValidateIssuer = true,
+                ValidIssuer = configuration["JWTTokenSettings:ValidIssuer"],
+                ValidateAudience = false,
+                ValidateLifetime = false
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken? validatedToken = null;
+            try
+            {
+                tokenHandler.ValidateToken(token, validation, out validatedToken);
+            }
+            catch (SecurityTokenException) { return false; }
+            catch (ArgumentNullException) { return false; }
+            catch (ArgumentException) { return false; }
+            catch (Exception)
+            {
+                throw;
+            }
+            
+            return validatedToken != null;
         }
     }
 }

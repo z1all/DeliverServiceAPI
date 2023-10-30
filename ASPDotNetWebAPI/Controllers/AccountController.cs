@@ -1,6 +1,5 @@
 ﻿using ASPDotNetWebAPI.CustomValidationAttributes;
 using ASPDotNetWebAPI.Helpers;
-using ASPDotNetWebAPI.Models;
 using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -114,10 +113,10 @@ namespace ASPDotNetWebAPI.Controllers
             };
         }
 
-        [HttpGet("refresh")]
+        [HttpPost("refresh")]
         public async Task<TokenResponseDTO> Refresh([FromBody] RefreshDTO refreshDTO)
         {
-            throw new NotImplementedException();
+            return await _userRepository.RefreshAsync(refreshDTO);
         }
 
         /// <summary>
