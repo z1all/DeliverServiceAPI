@@ -13,7 +13,7 @@ namespace ASPDotNetWebAPI.Models
         public DbSet<Hierarchy> Hierarchys { get; set; }
         public DbSet<AddressElement> AddressElements { get; set; }
         public DbSet<RegionTimeZone> RegionTimeZones { get; set; }
-        public DbSet<DeletedTokens> DeletedTokens { get; set; }
+        public DbSet<RefreshTokens> RefreshTokens { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -22,6 +22,15 @@ namespace ASPDotNetWebAPI.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Adding restrictions for the RefreshTokens link
+            modelBuilder.Entity<RefreshTokens>()
+                .HasOne(refreshTokens => refreshTokens.User)
+                .WithMany()
+                .HasForeignKey(refreshTokens => refreshTokens.UserId)
+                .IsRequired();
+            modelBuilder.Entity<RefreshTokens>()
+                .HasKey(refreshTokens => refreshTokens.Id);
+
             // Adding restrictions for the Rating link
             modelBuilder.Entity<Rating>()
                 .HasOne(rating => rating.Dish)

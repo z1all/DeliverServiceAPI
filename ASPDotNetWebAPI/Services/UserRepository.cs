@@ -9,35 +9,44 @@ namespace ASPDotNetWebAPI.Services
     public class UserRepository : IUserRepository
     {
         private readonly ApplicationDbContext _dbContext;
-        private string? secretKey;
-        private int saltNum;
+        private readonly IConfiguration _configuration;
+        private readonly int _saltNum;
+        private readonly int _refreshTokenTimeLifeDay;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
-            secretKey = configuration.GetValue<string>("JWTTokenSettings:Secret");
-            saltNum = configuration.GetValue<int>("PasswordHashSettings:SaltNum");
+            _configuration = configuration;
+
+            _saltNum = configuration.GetValue("PasswordHashSettings:SaltNum", 12);
+            _refreshTokenTimeLifeDay = configuration.GetValue("JWTTokenSettings:RefreshTokenLifeTimeDay", 1);
         }
 
         public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
         {
-            var isNotUnique = await EmailIsUsedAsync(model.Email);
+            var problemDetails = new HttpValidationProblemDetails();
 
+            var isNotUnique = await EmailIsUsedAsync(model.Email);
             if (isNotUnique)
             {
-                throw new ValidationProblemException($"Username '{model.Email}' is already taken.");
+                problemDetails.Errors.Add("Email", new[] { $"Username '{model.Email}' is already taken." });
             }
 
             var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
             if (house == null)
             {
-                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
+                problemDetails.Errors.Add("Address", new[] { $"Guid {model.AddressId} not found or does not belong to a building!" });
+            }
+
+            if (problemDetails.Errors.Count > 0)
+            {
+                throw new ValidationProblemException(problemDetails);
             }
 
             var user = new User()
             {
                 FullName = model.FullName,
-                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(saltNum)),
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(_saltNum)),
                 BirthDate = model.BirthDate,
                 Gender = model.Gender,
                 PhoneNumber = model.PhoneNumber,
@@ -46,12 +55,11 @@ namespace ASPDotNetWebAPI.Services
             };
 
             await _dbContext.Users.AddAsync(user);
+            var tokens = await GetTokensAndAddToDb(user);
+
             await _dbContext.SaveChangesAsync();
 
-            return new TokenResponseDTO()
-            {
-                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
-            };
+            return tokens;
         }
 
         public async Task<TokenResponseDTO> LoginAsync(LoginRequestDTO model)
@@ -67,16 +75,84 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException("Login failed. A user with this username and password was not found!");
             }
 
-            return new TokenResponseDTO()
-            {
-                Token = JWTTokenHelper.GeneratJWTToken(user, secretKey)
-            };
+            var tokens = await GetTokensAndAddToDb(user);
+            await _dbContext.SaveChangesAsync();
+
+            return tokens;
         }
 
-        public async Task LogoutAsync(Guid JTI)
+        private async Task<TokenResponseDTO> GetTokensAndAddToDb(User user)
         {
-            await _dbContext.DeletedTokens.AddAsync(new() { TokenJTI = JTI.ToString() });
+            var tokens = new TokenResponseDTO()
+            {
+                AccessToken = JWTTokenHelper.GeneratJWTToken(user, _configuration),
+                RefreshToken = JWTTokenHelper.GenerateRefreshToken()
+            };
+            await _dbContext.RefreshTokens.AddAsync(new RefreshTokens()
+            {
+                RefreshToken = tokens.RefreshToken,
+                AccessTokenJTI = JWTTokenHelper.GetJTIFromToken(tokens.AccessToken),
+                User = user,
+                Expires = DateTime.UtcNow.AddDays(_refreshTokenTimeLifeDay)
+            });
+
+            return tokens;
+        }
+
+        public async Task LogoutAllAsync(Guid userId)
+        {
+            var usersRefreshTokens = await _dbContext.RefreshTokens.Where(refreshToken => refreshToken.UserId == userId).ToListAsync();
+            _dbContext.RefreshTokens.RemoveRange(usersRefreshTokens);
+
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task LogoutCurrentAsync(Guid userId, Guid JTICurrentAccessToken)
+        {
+            var usersRefreshTokens = await _dbContext.RefreshTokens.FirstOrDefaultAsync(token => token.AccessTokenJTI == JTICurrentAccessToken && token.UserId == userId);
+            if (usersRefreshTokens == null)
+            {
+                throw new NotFoundException("Refresh token not found!");
+            }
+
+            _dbContext.RefreshTokens.Remove(usersRefreshTokens);
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<TokenResponseDTO> RefreshAsync(RefreshDTO refreshDTO)
+        {
+            if (!JWTTokenHelper.ValidateToken(refreshDTO.AccessToken, _configuration))
+            {
+                throw new UnauthorizedException("Access token failed validation!");
+            }
+
+            var userId = JWTTokenHelper.GetUserIdFromToken(refreshDTO.AccessToken);
+            var JTI = JWTTokenHelper.GetJTIFromToken(refreshDTO.AccessToken);
+
+            var tokensFromDb = await _dbContext.RefreshTokens
+                .FirstOrDefaultAsync(refreshTokens => refreshTokens.RefreshToken == refreshDTO.RefreshToken);
+            if (tokensFromDb == null || tokensFromDb.UserId != userId || tokensFromDb.AccessTokenJTI != JTI || tokensFromDb.Expires < DateTime.UtcNow)
+            {
+                throw new UnauthorizedException("The Refresh token was not found, or is not associated with the Access token, or its lifetime has expired!");
+            }
+
+            var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
+            if (user == null)
+            {
+                throw new NotFoundException($"User with Guid {userId} not found!");
+            }
+
+            var tokens = new TokenResponseDTO()
+            {
+                RefreshToken = refreshDTO.RefreshToken,
+                AccessToken = JWTTokenHelper.GeneratJWTToken(user, _configuration)
+            };
+
+            tokensFromDb.AccessTokenJTI = JWTTokenHelper.GetJTIFromToken(tokens.AccessToken);
+            await _dbContext.SaveChangesAsync();
+
+            return tokens;
         }
 
         public async Task<UserResponseDTO> GetProfileAsync(Guid userId)
@@ -108,10 +184,12 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"User with Guid {userId} not found!");
             }
 
+            var problemDetails = new HttpValidationProblemDetails();
+
             var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
             if (house == null)
             {
-                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
+                problemDetails.Errors.Add("Address", new[] { $"Guid {model.AddressId} not found or does not belong to a building!" });
             }
 
             if (user.Email != model.Email)
@@ -119,8 +197,13 @@ namespace ASPDotNetWebAPI.Services
                 var userSameEmail = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
                 if (userSameEmail != null)
                 {
-                    throw new ValidationProblemException($"A user with the same email {model.Email} already exists");
+                    problemDetails.Errors.Add("Email", new[] { $"A user with the same email {model.Email} already exists" });
                 }
+            }
+
+            if (problemDetails.Errors.Count > 0)
+            {
+                throw new ValidationProblemException(problemDetails);
             }
 
             user.FullName = model.FullName;

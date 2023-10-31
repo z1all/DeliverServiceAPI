@@ -1,9 +1,9 @@
-﻿using ASPDotNetWebAPI.Models;
+﻿using ASPDotNetWebAPI.Helpers;
+using ASPDotNetWebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace ASPDotNetWebAPI.CustomValidationAttributes
 {
@@ -11,36 +11,27 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
     {
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            var token = context.HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var parsedToken = tokenHandler.ReadJwtToken(token);
-
-            await CheckTokenJTI(context, parsedToken);
-            CheckTokenUserId(context, parsedToken);
+            await CheckTokenJTI(context);
+            CheckTokenUserId(context);
         }
 
-        private async Task CheckTokenJTI(AuthorizationFilterContext context, JwtSecurityToken token)
+        private async Task CheckTokenJTI(AuthorizationFilterContext context)
         {
-            var JTI = token.Claims.FirstOrDefault(claim => claim.Type == "JTI");
-            if (JTI == null)
-            {
-                Forbid(context, "JWTToken", "Error: a token without a unique identifier JTI.");
-                return;
-            }
+            var JTI = JWTTokenHelper.GetJTIFromToken(context.HttpContext);
+            var userId = JWTTokenHelper.GetUserIdFromToken(context.HttpContext);
 
             var dbContext = context.HttpContext.RequestServices.GetService<ApplicationDbContext>();
-            var deletedToken = await dbContext.DeletedTokens.FirstOrDefaultAsync(token => token.TokenJTI == JTI.Value);
-            if (deletedToken != null)
+            var accessToken = await dbContext.RefreshTokens.FirstOrDefaultAsync(refreshToken => refreshToken.AccessTokenJTI == JTI && refreshToken.UserId == userId);
+            if (accessToken == null)
             {
-                Forbid(context, "JWTToken", "Error: this token is no longer available");
+                Forbid(context, "JWTToken", "Error: this token is no longer available!");
                 return;
             }
         }
 
-        private void CheckTokenUserId(AuthorizationFilterContext context, JwtSecurityToken token)
+        private void CheckTokenUserId(AuthorizationFilterContext context)
         {
-            var userGuidStr = token.Claims.FirstOrDefault(claim => claim.Type == "UserId");
+            var userGuidStr = JWTTokenHelper.GetValueFromToken(context.HttpContext, "UserId");
 
             if (userGuidStr == null)
             {
@@ -48,7 +39,7 @@ namespace ASPDotNetWebAPI.CustomValidationAttributes
                 return;
             }
 
-            if (!Guid.TryParse(userGuidStr.Value, out Guid userGuid))
+            if (!Guid.TryParse(userGuidStr, out Guid userGuid))
             {
                 Forbid(context, "JWTToken", "Error: a token contain an uncorrected userId");
                 return;

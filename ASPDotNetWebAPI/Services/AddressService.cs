@@ -8,14 +8,14 @@ namespace ASPDotNetWebAPI.Services
     public class AddressService : IAddressService
     {
         private readonly ApplicationDbContext _dbContext;
-        private readonly int skipAddress;
-        private readonly int skipHouses;
+        private readonly int _skipAddress;
+        private readonly int _skipHouses;
 
         public AddressService(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
-            skipAddress = configuration.GetValue<int>("GlobalConstant:SkipAddress");
-            skipHouses = configuration.GetValue<int>("GlobalConstant:SkipHouse");
+            _skipAddress = configuration.GetValue("GlobalConstant:SkipAddress", 15);
+            _skipHouses = configuration.GetValue("GlobalConstant:SkipHouse", 15);
         }
 
         public async Task<List<SearchAddressDTO>> GetChildObjectsAsync(int parentObjectId, string? name)
@@ -29,7 +29,7 @@ namespace ASPDotNetWebAPI.Services
                     child => child.Objectid,
                     (fromParentTo, child) => new { fromParentTo, child })
                 .Where(x => x.fromParentTo.Parentobjid == parentObjectId && (x.child.Typename + x.child.Name).ToLower().Contains(nameElement))
-                .Take(skipAddress)
+                .Take(_skipAddress)
                 .Select(x => new SearchAddressDTO(x.child))
                 .ToListAsync();
 
@@ -40,7 +40,7 @@ namespace ASPDotNetWebAPI.Services
                     child => child.Objectid,
                     (fromParentTo, child) => new { fromParentTo, child })
                 .Where(x => x.fromParentTo.Parentobjid == parentObjectId && x.child.FullName.ToLower().Contains(nameElement))
-                .Take(skipHouses)
+                .Take(_skipHouses)
                 .Select(x => new SearchAddressDTO(x.child))
                 .ToListAsync();
 

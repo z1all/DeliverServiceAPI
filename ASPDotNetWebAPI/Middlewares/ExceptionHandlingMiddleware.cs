@@ -35,14 +35,15 @@ namespace ASPDotNetWebAPI.Middlewares
                 response.ContentType = "application/json";
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
 
-                var errorDTO = new HttpValidationProblemDetails();
-                errorDTO.Errors.Add("ValidationProblem", new[] { ex.Message });
-
-                await response.WriteAsJsonAsync(errorDTO);
+                await response.WriteAsJsonAsync(ex.httpValidationProblemDetails);
             }
             catch (BadRequestException ex)
             {
                 await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.BadRequest, ex.Message);
+            }
+            catch (UnauthorizedException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.Unauthorized, ex.Message);
             }
             catch (NotFoundException ex)
             {

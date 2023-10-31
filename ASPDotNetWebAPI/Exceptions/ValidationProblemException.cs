@@ -1,9 +1,20 @@
-﻿namespace ASPDotNetWebAPI.Exceptions
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace ASPDotNetWebAPI.Exceptions
 {
     public class ValidationProblemException : Exception
     {
-        public ValidationProblemException() { }
-        public ValidationProblemException(string message) : base(message) { }
-        public ValidationProblemException(string message, Exception innerException) : base(message, innerException) { }
+        public HttpValidationProblemDetails httpValidationProblemDetails;
+
+        public ValidationProblemException(string key, string message) : base(message)
+        {
+            httpValidationProblemDetails = new HttpValidationProblemDetails();
+            httpValidationProblemDetails.Errors.Add(key, new[] { message });
+        }
+
+        public ValidationProblemException(HttpValidationProblemDetails httpValidationProblemDetails) : base("Any errors in model")
+        {
+            this.httpValidationProblemDetails = httpValidationProblemDetails;
+        }
     }
 }

@@ -10,13 +10,13 @@ namespace ASPDotNetWebAPI.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IAddressService _addressService;
-        private readonly int AddTimeToUTC;
+        private readonly int _addTimeToUTC;
 
         public OrderService(ApplicationDbContext dbContext, IAddressService addressService, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _addressService = addressService;
-            AddTimeToUTC = configuration.GetValue<int>("TimeZoneSettings:AddTimeToUTC");
+            _addTimeToUTC = configuration.GetValue("TimeZoneSettings:AddTimeToUTC", 3);
         }
 
         public async Task<OrderDTO> GetOrderInfoAsync(Guid userId, Guid orderId)
@@ -83,7 +83,7 @@ namespace ASPDotNetWebAPI.Services
         public async Task CreateOrderFormBasketAsync(Guid userId, OrderCreateDTO orderCreateDTO)
         {
             var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(orderCreateDTO.AddressId);
-            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
+            var nowTime = DateTime.UtcNow.AddHours(_addTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
 
             if (orderCreateDTO.DeliveryTime < nowTime)
             {
@@ -93,7 +93,7 @@ namespace ASPDotNetWebAPI.Services
             var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == orderCreateDTO.AddressId);
             if (house == null)
             {
-                throw new ValidationProblemException($"Guid {orderCreateDTO.AddressId} not found or does not belong to a building!");
+                throw new ValidationProblemException("Address", $"Guid {orderCreateDTO.AddressId} not found or does not belong to a building!");
             } 
 
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
@@ -149,7 +149,7 @@ namespace ASPDotNetWebAPI.Services
             }
 
             var regionTimeZone = await _addressService.GetRegionTimeZoneAsync(order.AddressId);
-            var nowTime = DateTime.UtcNow.AddHours(AddTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
+            var nowTime = DateTime.UtcNow.AddHours(_addTimeToUTC + regionTimeZone.TimeDifferenceWithMoscow);
 
             if (order.DeliveryTime >= nowTime)
             {
