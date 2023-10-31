@@ -10,37 +10,43 @@ namespace ASPDotNetWebAPI.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
-        private int saltNum;
-        private int refreshTokenTimeLifeDay;
+        private readonly int _saltNum;
+        private readonly int _refreshTokenTimeLifeDay;
 
         public UserRepository(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _configuration = configuration;
 
-            refreshTokenTimeLifeDay = configuration.GetValue<int>("JWTTokenSettings:RefreshTokenLifeTimeDay");
-            saltNum = configuration.GetValue<int>("PasswordHashSettings:SaltNum");
+            _saltNum = configuration.GetValue("PasswordHashSettings:SaltNum", 12);
+            _refreshTokenTimeLifeDay = configuration.GetValue("JWTTokenSettings:RefreshTokenLifeTimeDay", 1);
         }
 
         public async Task<TokenResponseDTO> RegisterAsync(RegistrationRequestDTO model)
         {
-            var isNotUnique = await EmailIsUsedAsync(model.Email);
+            var problemDetails = new HttpValidationProblemDetails();
 
+            var isNotUnique = await EmailIsUsedAsync(model.Email);
             if (isNotUnique)
             {
-                throw new ValidationProblemException($"Username '{model.Email}' is already taken.");
+                problemDetails.Errors.Add("Email", new[] { $"Username '{model.Email}' is already taken." });
             }
 
             var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
             if (house == null)
             {
-                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
+                problemDetails.Errors.Add("Address", new[] { $"Guid {model.AddressId} not found or does not belong to a building!" });
+            }
+
+            if (problemDetails.Errors.Count > 0)
+            {
+                throw new ValidationProblemException(problemDetails);
             }
 
             var user = new User()
             {
                 FullName = model.FullName,
-                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(saltNum)),
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(model.Password, BCrypt.Net.BCrypt.GenerateSalt(_saltNum)),
                 BirthDate = model.BirthDate,
                 Gender = model.Gender,
                 PhoneNumber = model.PhoneNumber,
@@ -75,7 +81,7 @@ namespace ASPDotNetWebAPI.Services
             return tokens;
         }
 
-        private async Task<TokenResponseDTO> GetTokensAndAddToDb (User user)
+        private async Task<TokenResponseDTO> GetTokensAndAddToDb(User user)
         {
             var tokens = new TokenResponseDTO()
             {
@@ -87,7 +93,7 @@ namespace ASPDotNetWebAPI.Services
                 RefreshToken = tokens.RefreshToken,
                 AccessTokenJTI = JWTTokenHelper.GetJTIFromToken(tokens.AccessToken),
                 User = user,
-                Expires = DateTime.UtcNow.AddDays(refreshTokenTimeLifeDay)
+                Expires = DateTime.UtcNow.AddDays(_refreshTokenTimeLifeDay)
             });
 
             return tokens;
@@ -178,10 +184,12 @@ namespace ASPDotNetWebAPI.Services
                 throw new NotFoundException($"User with Guid {userId} not found!");
             }
 
+            var problemDetails = new HttpValidationProblemDetails();
+
             var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
             if (house == null)
             {
-                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
+                problemDetails.Errors.Add("Address", new[] { $"Guid {model.AddressId} not found or does not belong to a building!" });
             }
 
             if (user.Email != model.Email)
@@ -189,8 +197,13 @@ namespace ASPDotNetWebAPI.Services
                 var userSameEmail = await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == model.Email);
                 if (userSameEmail != null)
                 {
-                    throw new ValidationProblemException($"A user with the same email {model.Email} already exists");
+                    problemDetails.Errors.Add("Email", new[] { $"A user with the same email {model.Email} already exists" });
                 }
+            }
+
+            if (problemDetails.Errors.Count > 0)
+            {
+                throw new ValidationProblemException(problemDetails);
             }
 
             user.FullName = model.FullName;

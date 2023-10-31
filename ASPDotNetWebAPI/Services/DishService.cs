@@ -10,12 +10,12 @@ namespace ASPDotNetWebAPI.Services
     public class DishService : IDishService
     {
         private readonly ApplicationDbContext _dbContext;
-        private readonly IConfiguration _configuration;
+        private readonly int _countOfDishOnPage;
 
         public DishService(ApplicationDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
-            _configuration = configuration;
+            _countOfDishOnPage = configuration.GetValue("GlobalConstant:CountOfDishOnPage", 5);
         }
 
         public async Task<DishPagedListDTO> GetDishesAsync(DishCategory?[] category, bool isVegetarian, DishSorting dishSorting, int page)
@@ -30,10 +30,8 @@ namespace ASPDotNetWebAPI.Services
 
             dishesRequest = SortDishes(dishSorting, dishesRequest);
 
-            var countOfDishOnPageStr = _configuration.GetValue<string>("GlobalConstant:CountOfDishOnPage");
-            int countOfDishOnPage = countOfDishOnPageStr != null ? int.Parse(countOfDishOnPageStr) : 5;
             int countOfDishes = await dishesRequest.CountAsync();
-            int countOfPages = (int)Math.Ceiling((double)countOfDishes / countOfDishOnPage);
+            int countOfPages = (int)Math.Ceiling((double)countOfDishes / _countOfDishOnPage);
 
             if (countOfPages < page)
             {
@@ -41,7 +39,7 @@ namespace ASPDotNetWebAPI.Services
             }
 
             var listOfDishes = await dishesRequest
-                .Skip(countOfDishOnPage * (page - 1)).Take(countOfDishOnPage)
+                .Skip(_countOfDishOnPage * (page - 1)).Take(_countOfDishOnPage)
                 .Select(dish => new DishDTO()
                 {
                     Id = dish.Id,
@@ -162,7 +160,7 @@ namespace ASPDotNetWebAPI.Services
                 .Include(dishInCarts => dishInCarts.Order)
                 .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
 
-            if (dishInCarts == null || (dishInCarts.Order != null && dishInCarts.Order.Status == Status.Delivered || true))
+            if (dishInCarts == null || dishInCarts.Order.Status != Status.Delivered)
             {
                 return false;
             }

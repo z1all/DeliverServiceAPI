@@ -35,10 +35,7 @@ namespace ASPDotNetWebAPI.Middlewares
                 response.ContentType = "application/json";
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
 
-                var errorDTO = new HttpValidationProblemDetails();
-                errorDTO.Errors.Add("ValidationProblem", new[] { ex.Message });
-
-                await response.WriteAsJsonAsync(errorDTO);
+                await response.WriteAsJsonAsync(ex.httpValidationProblemDetails);
             }
             catch (BadRequestException ex)
             {
