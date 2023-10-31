@@ -2,7 +2,7 @@
 
 namespace ASPDotNetWebAPI.Models.DTO
 {
-    public class TokenResponseDTO
+    public class RefreshDTO
     {
         [Required]
         public string AccessToken { get; set; }

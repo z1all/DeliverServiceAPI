@@ -48,7 +48,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configuring Authentication
-var key = builder.Configuration.GetValue<string>("JWTTokenSettings:Secret");
+var secret = builder.Configuration["JWTTokenSettings:Secret"] ?? throw new InvalidOperationException("Secret not configured");
+var ValidIssuer = builder.Configuration["JWTTokenSettings:ValidIssuer"] ?? throw new InvalidOperationException("ValidIssuer not configured");
+var TimeSpanSecond = builder.Configuration.GetValue<int>("JWTTokenSettings:TimeSpanSecond");
 builder.Services.AddAuthentication(authOptions =>
 {
     authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,10 +61,11 @@ builder.Services.AddAuthentication(authOptions =>
         jwtOptions.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)),
             ValidateIssuer = true,
-            ValidIssuer = "HITs",
-            ValidateAudience = false
+            ValidIssuer = ValidIssuer,
+            ValidateAudience = false,
+            ClockSkew = new TimeSpan(0, 0, TimeSpanSecond)
         };
 
     });

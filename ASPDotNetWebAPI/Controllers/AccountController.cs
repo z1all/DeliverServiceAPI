@@ -83,20 +83,41 @@ namespace ASPDotNetWebAPI.Controllers
         /// </summary>
         /// <response code="401">Unauthorized</response>
         /// <response code="403">Forbidden</response>
-        [HttpPost("logout")]
+        [HttpPost("logoutall")]
         [CustomAuthorize]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<ResponseDTO> Logout()
+        public async Task<ResponseDTO> LogoutAll()
         {
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
+            await _userRepository.LogoutAllAsync(userId);
+
+            return new ResponseDTO()
+            {
+                Status = null,
+                Message = "All sessions are completed."
+            };
+        }
+
+        [HttpPost("logoutcurrent")]
+        [CustomAuthorize]
+        public async Task<ResponseDTO> LogoutCurrent()
+        {
+            var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
             var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
-            await _userRepository.LogoutAsync(JTI);
+            await _userRepository.LogoutCurrentAsync(userId, JTI);
 
             return new ResponseDTO()
             {
                 Status = null,
                 Message = "Logged out."
             };
+        }
+
+        [HttpPost("refresh")]
+        public async Task<TokenResponseDTO> Refresh([FromBody] RefreshDTO refreshDTO)
+        {
+            return await _userRepository.RefreshAsync(refreshDTO);
         }
 
         /// <summary>

@@ -44,6 +44,10 @@ namespace ASPDotNetWebAPI.Middlewares
             {
                 await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.BadRequest, ex.Message);
             }
+            catch (UnauthorizedException ex)
+            {
+                await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.Unauthorized, ex.Message);
+            }
             catch (NotFoundException ex)
             {
                 await HandlExceptionAsync(LogLevel.Information, httpContext, ex, HttpStatusCode.NotFound, ex.Message);
