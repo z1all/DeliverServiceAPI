@@ -101,10 +101,11 @@ namespace ASPDotNetWebAPI.Controllers
 
         [HttpPost("logoutcurrent")]
         [CustomAuthorize]
-        public async Task<ResponseDTO> LogoutCurrent([FromBody]TokenLogoutDTO refreshToken)
+        public async Task<ResponseDTO> LogoutCurrent()
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
-            await _userRepository.LogoutCurrentAsync(userId, refreshToken);
+            var JTI = JWTTokenHelper.GetJTIFromToken(HttpContext);
+            await _userRepository.LogoutCurrentAsync(userId, JTI);
 
             return new ResponseDTO()
             {

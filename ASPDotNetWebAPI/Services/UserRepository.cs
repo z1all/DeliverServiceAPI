@@ -95,9 +95,9 @@ namespace ASPDotNetWebAPI.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task LogoutCurrentAsync(Guid userId, TokenLogoutDTO refreshToken)
+        public async Task LogoutCurrentAsync(Guid userId, Guid JTICurrentAccessToken)
         {
-            var usersRefreshTokens = await _dbContext.RefreshTokens.FirstOrDefaultAsync(token => token.RefreshToken == refreshToken.RefreshToken);
+            var usersRefreshTokens = await _dbContext.RefreshTokens.FirstOrDefaultAsync(token => token.AccessTokenJTI == JTICurrentAccessToken && token.UserId == userId);
             if (usersRefreshTokens == null)
             {
                 throw new NotFoundException("Refresh token not found!");
@@ -116,10 +116,11 @@ namespace ASPDotNetWebAPI.Services
             }
 
             var userId = JWTTokenHelper.GetUserIdFromToken(refreshDTO.AccessToken);
+            var JTI = JWTTokenHelper.GetJTIFromToken(refreshDTO.AccessToken);
 
             var tokensFromDb = await _dbContext.RefreshTokens
                 .FirstOrDefaultAsync(refreshTokens => refreshTokens.RefreshToken == refreshDTO.RefreshToken);
-            if (tokensFromDb == null || tokensFromDb.UserId != userId || tokensFromDb.Expires < DateTime.UtcNow)
+            if (tokensFromDb == null || tokensFromDb.UserId != userId || tokensFromDb.AccessTokenJTI != JTI || tokensFromDb.Expires < DateTime.UtcNow)
             {
                 throw new UnauthorizedException("The Refresh token was not found, or is not associated with the Access token, or its lifetime has expired!");
             }
