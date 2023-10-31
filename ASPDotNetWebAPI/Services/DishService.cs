@@ -102,6 +102,11 @@ namespace ASPDotNetWebAPI.Services
 
         public async Task<DishDTO> SetRatingAsync(Guid dishId, Guid userId, int ratingScore)
         {
+            if (ratingScore < 0 || ratingScore > 10)
+            {
+                throw new BadRequestException("The score must belong to the range from 0 to 10.");
+            }
+
             var dish = await _dbContext.Dishes.FirstOrDefaultAsync(dish => dish.Id == dishId);
             if (dish == null)
             {
@@ -154,9 +159,10 @@ namespace ASPDotNetWebAPI.Services
         private async Task<bool> CheckToSetRatingWithoutCheckDishAsync(Guid dishId, Guid userId)
         {
             var dishInCarts = await _dbContext.DishInCarts
+                .Include(dishInCarts => dishInCarts.Order)
                 .FirstOrDefaultAsync(dishInCarts => dishInCarts.UserId == userId && dishInCarts.DishId == dishId && dishInCarts.OrderId != null);
 
-            if (dishInCarts == null)
+            if (dishInCarts == null || (dishInCarts.Order != null && dishInCarts.Order.Status == Status.Delivered || true))
             {
                 return false;
             }
