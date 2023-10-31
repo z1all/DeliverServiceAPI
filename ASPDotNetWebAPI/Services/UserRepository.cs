@@ -28,6 +28,12 @@ namespace ASPDotNetWebAPI.Services
                 throw new ValidationProblemException($"Username '{model.Email}' is already taken.");
             }
 
+            var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
+            if (house == null)
+            {
+                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
+            }
+
             var user = new User()
             {
                 FullName = model.FullName,
@@ -100,6 +106,12 @@ namespace ASPDotNetWebAPI.Services
             if (user == null)
             {
                 throw new NotFoundException($"User with Guid {userId} not found!");
+            }
+
+            var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == model.AddressId);
+            if (house == null)
+            {
+                throw new ValidationProblemException($"Guid {model.AddressId} not found or does not belong to a building!");
             }
 
             if (user.Email != model.Email)

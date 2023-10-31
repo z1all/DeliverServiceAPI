@@ -90,6 +90,12 @@ namespace ASPDotNetWebAPI.Services
                 throw new BadRequestException($"The time in the region {nowTime} of the order must be less than the delivery time {orderCreateDTO.DeliveryTime} of the order!");
             }
 
+            var house = await _dbContext.Houses.FirstOrDefaultAsync(house => house.Objectguid == orderCreateDTO.AddressId);
+            if (house == null)
+            {
+                throw new ValidationProblemException($"Guid {orderCreateDTO.AddressId} not found or does not belong to a building!");
+            } 
+
             var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (user == null)
             {
