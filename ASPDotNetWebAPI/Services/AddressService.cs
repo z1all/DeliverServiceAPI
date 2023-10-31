@@ -44,7 +44,7 @@ namespace ASPDotNetWebAPI.Services
                 .Select(x => new SearchAddressDTO(x.child))
                 .ToListAsync();
 
-            return addressElement.Concat(houses).ToList();
+            return addressElement.Concat(houses).DistinctBy(element => element.ObjectId).ToList();
         }
 
         public async Task<List<SearchAddressDTO>> GetPathFromRootToObjectAsync(Guid ObjectGuid)

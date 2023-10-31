@@ -4,6 +4,7 @@ using ASPDotNetWebAPI.Models.DTO;
 using ASPDotNetWebAPI.Models.Enums;
 using ASPDotNetWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace ASPDotNetWebAPI.Controllers
 {
@@ -70,7 +71,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<DishDTO> SetRating(Guid id, [FromQuery] int value)
+        public async Task<DishDTO> SetRating(Guid id, [FromQuery] [Range(0, 10, ErrorMessage = "The score must belong to the range from 0 to 10")] int value)
         {
             var userId = JWTTokenHelper.GetUserIdFromToken(HttpContext);
 
