@@ -81,6 +81,8 @@ builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+builder.Services.AddHostedService<CleanRefreshTokensDbHostedService>();
+
 // Cleaning of logger providers
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
