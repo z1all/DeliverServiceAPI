@@ -1,5 +1,7 @@
 ﻿using ASPDotNetWebAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace ASPDotNetWebAPI.Services
 {
@@ -28,7 +30,9 @@ namespace ASPDotNetWebAPI.Services
 
                         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                        await dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM public.\"RefreshTokens\" WHERE \"Expires\" < '{DateTime.UtcNow}'");
+                        DateTime currentDateTime = DateTime.UtcNow;
+                        await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM public.\"RefreshTokens\" WHERE \"Expires\" < @currentDateTime",
+                                  new NpgsqlParameter("@currentDateTime", NpgsqlDbType.TimestampTz) { Value = currentDateTime });
 
                         _logger.LogInformation("refreshtokens cleaning is finished!");
                     }
