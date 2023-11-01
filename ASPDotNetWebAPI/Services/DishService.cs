@@ -195,9 +195,9 @@ namespace ASPDotNetWebAPI.Services
                 case DishSorting.PriceDesc:
                     return dishes.OrderByDescending(dish => dish.Price);
                 case DishSorting.RatingAsc:
-                    return dishes.OrderBy(dish => dish.Rating);
+                    return dishes.OrderBy(dish => dish.Rating ?? -1);
                 case DishSorting.RatingDesc:
-                    return dishes.OrderByDescending(dish => dish.Rating);
+                    return dishes.OrderByDescending(dish => dish.Rating ?? -1);
             }
 
             return dishes;

@@ -26,7 +26,7 @@ namespace ASPDotNetWebAPI.Controllers
         [ProducesResponseType(typeof(DishPagedListDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ResponseDTO), StatusCodes.Status500InternalServerError)]
-        public async Task<DishPagedListDTO> GetDishesAsync([FromQuery] DishCategory?[] category, [FromQuery] bool isVegetarian = false, [FromQuery] DishSorting dishSorting = DishSorting.RatingAsc, [FromQuery] int page = 1)
+        public async Task<DishPagedListDTO> GetDishesAsync([FromQuery] DishCategory?[] category, [FromQuery] bool isVegetarian = false, [FromQuery] DishSorting dishSorting = DishSorting.RatingDesc, [FromQuery] int page = 1)
         {
             return await _dishService.GetDishesAsync(category, isVegetarian, dishSorting, page);
         }
